@@ -99,6 +99,72 @@ std::vector<int> construcao(float alpha){
 	return s;
 }	
 
+void swap(std::vector<int> &s, int i, int j){
+	int aux;
+
+	aux = s[i];
+	s[i] = s[j];
+	s[j] = aux;
+}
+
+void 2_opt(std::vector<int> &s, int i, int j){
+	std::reverse(s.begin() + i, s.begin() + j);
+
+#define SWAP 		1
+#define 2_OPT		2
+#define REINSERTION 3
+#define OR_OPT2 	4
+#define OR_OPT3 	5
+
+void RVND(std::vector<int> &s){
+
+	std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+	/* 
+	list of 5 neighborhood structures
+
+	1 : swap
+	2 : 2-opt
+	3 : reinsertion
+	4 : or-opt2
+	5 : or-opt3
+	*/
+
+	while(!neighbd_list.empty()){
+		
+		int neighbd_rand_index = rand() % neighbd_list.size();
+		int neighbd_rand = neighbd_list[neighbd_rand_index];
+
+		struct neighbor_info{
+		  std::vector<int> neighbor = s;
+		  int cost_dif;
+		}
+
+		switch(neighbd_rand){
+			case SWAP:
+				int dif;	
+				int dif_lower;
+				struct neighbor_info cheapest;
+				for(int i = 1; i < s.size() - 2; i++){
+					for(int j = i + 1; j < s.size() - 1; i++){
+						// subtract the distances
+						dif = - c[s[i]-1][s[i-1]-1] - c[s[i]-1][s[i+1]-1] - c[s[j]-1][s[j-1]-1] - c[s[j]-1][s[j+1]-1];
+						dif += c[s[i]-1][s[j-1]-1] + c[s[i]-1][s[j+1]-1] + c[s[j]-1][s[i-1]-1] + c[s[j]-1][s[i+1]-1];
+
+						if(dif < dif_lower){
+							dif_lower = dif;
+
+							swap(cheapest.neighbor);
+							cheapest.cost_dif = dif_lower;
+
+						}
+					}
+				}
+		}
+
+	}
+}
+
+
 void GILS_RVND(int Imax, int Iils){
 	for(int i = 0; i < Imax; i++){
 		float alpha = 1 / rand();
