@@ -23,6 +23,13 @@ struct insertion_info {
   double cost;
 };
 
+struct neighbor_info{
+  std::vector<int> neighbor;
+  int i;
+  int j;
+  int cost_dif;
+};
+
 double **matrix;
 int dimension;
 
@@ -63,7 +70,7 @@ std::vector<int> construcao(float alpha){
 		for(auto k : candidatos){
 			for(int i = 0, j = 1; i < s.size() - 1; i++, j++){  //modificacao ('i < s.size()' para 'i <= s.size()') 
 				
-				insertion_cost[l].cost = c[s[i]-1][k-1] + c[s[j]-1][k-1] - c[s[i]][s[j]];  //modificacao temporaria
+				insertion_cost[l].cost = c[s[i]-1][k-1] + c[s[j]-1][k-1] - c[s[i]-1][s[j]-1];  //modificacao temporaria
 				insertion_cost[l].node_new = k;
 				insertion_cost[l].edge_removed = i; 
 				l++;
@@ -107,18 +114,92 @@ void swap(std::vector<int> &s, int i, int j){
 	s[j] = aux;
 }
 
-void 2_opt(std::vector<int> &s, int i, int j){
-	std::reverse(s.begin() + i, s.begin() + j);
+void two_opt(struct neighbor_info *cheapest, int i, int j){
+	std::reverse(cheapest->neighbor.begin() + i, cheapest->neighbor.begin() + j);
+}
+
+void neighbor_swap_better(struct neighbor_info *cheapest, std::vector<int> &s){
+	int dif = 0;
+	int dif_lower;
+	for(int i = 1; i < s.size() - 2; i++){
+		for(int j = i + 1; j < s.size() - 1; j++){
+			// subtract the old distances
+			dif += - c[s[i]-1][s[i-1]-1] - c[s[i]-1][s[i+1]-1] - c[s[j]-1][s[j-1]-1] - c[s[j]-1][s[j+1]-1];
+			// add the new distances
+			dif += c[s[i]-1][s[j-1]-1] + c[s[i]-1][s[j+1]-1] + c[s[j]-1][s[i-1]-1] + c[s[j]-1][s[i+1]-1];
+
+			if(i + 1 == j) //consecutive
+				dif += 2 * c[s[i]-1][s[j]-1];
+
+			std::cout << " " << dif;
+
+			if(dif < dif_lower || (i == 1 && j == 2)){
+				dif_lower = dif;
+				cheapest->i = i;
+				cheapest->j = j;
+				cheapest->cost_dif = dif_lower;
+
+			}
+		}
+		dif = 0;
+	}
+	printf("\n");
+
+	swap(cheapest->neighbor, cheapest->i, cheapest->j);
+	for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
+		std::cout << " " << cheapest->neighbor[i];
+
+	std::cout << std::endl;
+	std::cout << "cost-dif =  " << cheapest->cost_dif << std::endl;
+}
+
+void neighbor_two_opt_better(struct neighbor_info *cheapest, std::vector<int> &s){
+	int dif = 0;
+	int dif_lower;
+	int j;
+	int sub_sz = rand() % (s.size() - 2);
+	while(sub_sz == 1 || !sub_sz)
+		sub_sz = rand() % (s.size() - 2);
+
+	printf("subsequence size =  %d\n", sub_sz);
+
+	for(int i = 1; i < s.size() - sub_sz; i++){
+		j = i + sub_sz - 1;
+		// subtract the old distances
+		dif += - c[s[i]-1][s[i-1]-1]  - c[s[j]-1][s[j+1]-1];
+		// add the new distances
+		dif +=  c[s[i]-1][s[j+1]-1] + c[s[j]-1][s[i-1]-1];
+
+		std::cout << " " << dif;
+
+		if(dif < dif_lower || (i == 1) ){
+		  dif_lower = dif;
+		  cheapest->i = i;
+		  cheapest->j = j;
+		  cheapest->cost_dif = dif_lower;
+
+		}
+		dif = 0;
+	}
+	printf("\n");
+
+	two_opt(cheapest, cheapest->i, cheapest->j);
+	for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
+		std::cout << " " << cheapest->neighbor[i];
+
+	std::cout << std::endl;
+	std::cout << "cost-dif =  " << cheapest->cost_dif << std::endl;
+}
 
 #define SWAP 		1
-#define 2_OPT		2
+#define TWO_OPT		2
 #define REINSERTION 3
 #define OR_OPT2 	4
 #define OR_OPT3 	5
 
 void RVND(std::vector<int> &s){
 
-	std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+	std::vector<int> neighbd_list = {2/*, 2, 3, 4, 5*/};
 	/* 
 	list of 5 neighborhood structures
 
@@ -128,38 +209,28 @@ void RVND(std::vector<int> &s){
 	4 : or-opt2
 	5 : or-opt3
 	*/
-
-	while(!neighbd_list.empty()){
+	int n =1;
+	while(n--/*!neighbd_list.empty()*/){
 		
 		int neighbd_rand_index = rand() % neighbd_list.size();
 		int neighbd_rand = neighbd_list[neighbd_rand_index];
 
-		struct neighbor_info{
-		  std::vector<int> neighbor = s;
-		  int cost_dif;
-		}
 
+		struct neighbor_info *cheapest = (struct neighbor_info *) malloc(sizeof(struct neighbor_info));
+		//std::copy(s.begin(), s.end(), cheapest->neighbor.begin());
+		cheapest->neighbor = s;
+
+		
 		switch(neighbd_rand){
 			case SWAP:
-				int dif;	
-				int dif_lower;
-				struct neighbor_info cheapest;
-				for(int i = 1; i < s.size() - 2; i++){
-					for(int j = i + 1; j < s.size() - 1; i++){
-						// subtract the distances
-						dif = - c[s[i]-1][s[i-1]-1] - c[s[i]-1][s[i+1]-1] - c[s[j]-1][s[j-1]-1] - c[s[j]-1][s[j+1]-1];
-						dif += c[s[i]-1][s[j-1]-1] + c[s[i]-1][s[j+1]-1] + c[s[j]-1][s[i-1]-1] + c[s[j]-1][s[i+1]-1];
-
-						if(dif < dif_lower){
-							dif_lower = dif;
-
-							swap(cheapest.neighbor);
-							cheapest.cost_dif = dif_lower;
-
-						}
-					}
-				}
+				neighbor_swap_better(cheapest, s);
+				break;
+			case TWO_OPT:
+				neighbor_two_opt_better(cheapest, s);
+				break;				
 		}
+		free(cheapest);
+		
 
 	}
 }
@@ -170,6 +241,7 @@ void GILS_RVND(int Imax, int Iils){
 		float alpha = 1 / rand();
 
 		std::vector<int> s = construcao(alpha);
+		RVND(s);
 
 	}
 }
@@ -177,7 +249,8 @@ void GILS_RVND(int Imax, int Iils){
 
 int main(){
 
-	construcao(0.5);
+	std::vector<int> s = construcao(0.5);
+	RVND(s);
 	//readData(argc, argv, &dimension, &matrix);
 	return 0;
 }
