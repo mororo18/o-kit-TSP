@@ -243,6 +243,7 @@ void neighbor_swap_better(struct neighbor_info *cheapest, std::vector<int> &s){
 }
 
 void neighbor_two_opt_better(struct neighbor_info *cheapest, std::vector<int> &s){
+	srand(time(NULL));
 	int dif;
 	int dif_lower;
 	int j;
@@ -359,6 +360,7 @@ long l=0;
 
 void RVND(std::vector<int> &s){
 
+	srand(time(NULL));
 	std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
 	l++;
 	while(!neighbd_list.empty()){
@@ -404,15 +406,89 @@ void RVND(std::vector<int> &s){
 }
 
 void perturb(std::vector<int> &s){
-	/*
-	int firs_size = rand() % ((dimension / 10) - 2) + 2;
-	int second_size = rand() % ((dimension / 10) - 2) + 2;
+	srand(time(NULL));
+	int dimension = s.size();
+	int first_size = (rand() % ((dimension / 10) - 2)) + 2;
+	int second_size = (rand() % ((dimension / 10) -2)) + 2;
 
-	int firs_pos;
+	int first_pos = rand() % (dimension - first_size - 1) + 1;
 	int second_pos;
+	int flag = 1;
+	// second_pos restrictions
+	while(flag){
+		int pos = rand() % (dimension - second_size);
+		if(pos && (pos <( first_pos - second_size) || pos > (first_pos + first_size))){
+			second_pos = pos;
+			flag = 0;
+		}
+	}
 
-	*/
+	flag = 1;
+	std::vector<int> list (dimension);
+	list[0] = 0;
+
+	for(int i = first_pos; i < first_pos + first_size; i++)
+		list[i] = 1;
 	
+	for(int i = second_pos; i < second_pos + second_size; i++)
+		list[i] = 2;
+
+	for(unsigned i = 0; i <  list.size(); i++)
+		std::cout << " " << list[i];
+
+	std::cout << std::endl;
+
+	int first_pos_next;
+	while(flag){
+		int pos = rand() % (dimension - first_size + 1) + 1;
+		if(pos == first_pos)
+			continue;
+		if(!(list[pos] == 2) != !(list[pos-1] == 2)){
+			first_pos_next = pos;
+			flag = 0;
+		}
+	}
+
+	reinsert(NULL, first_pos, first_pos + first_size - 1, first_pos_next, list);
+
+
+	for(unsigned i = 0; i <  list.size(); i++)
+		std::cout << " " << list[i];
+
+	std::cout << std::endl;
+
+	flag = 1;	
+	int second_pos_next;
+	while(flag){
+		int pos = rand() % (dimension - second_size + 1) + 1;
+		if(pos == second_pos)
+			continue;
+		if(!(list[pos] == 1) != !(list[pos-1] == 1)){
+			second_pos_next = pos;
+			flag = 0;
+		}
+	}
+
+	if(first_pos > second_pos && first_pos_next <= second_pos){
+		second_pos += first_size;
+	}else if(first_pos < second_pos && first_pos_next > second_pos){
+		second_pos -= first_size;
+	}
+	
+	reinsert(NULL, second_pos, second_pos + second_size - 1, second_pos_next, list);
+
+	for(unsigned i = 0; i <  list.size(); i++)
+		std::cout << " " << list[i];
+
+	std::cout << std::endl;
+	printf("1a pos = %d\n"
+			"1o tamanho = %d\n"
+			"2a pos = %d\n"
+			"2o tamanho = %d\n"
+			"1a next = %d\n"
+			"2a next = %d\n", first_pos, first_size, second_pos, second_size, first_pos_next, second_pos_next);
+	
+	/*
 	int nodes = s.size() - 1; // subtract the last
 	int sub_seq_sz = (int) nodes / 4;
 	int flag;
@@ -432,18 +508,13 @@ void perturb(std::vector<int> &s){
 		  two_opt(NULL, i, i + sub_seq_sz, s);
 	}
 	printf("perturb\n");
-	
-	/*
-	for(unsigned i = 0; i < s.size(); i++)
-		std::cout << " " << s[i];
-
-	std::cout << std::endl;
-	*/
+*/	
 	
 }
 
 void GILS_RVND(int Imax, int Iils){
 	for(int i = 0; i < Imax; i++){
+		srand(time(NULL));
 		int aux = rand() % 10;
 		double alpha =(double)( 1.0 / aux);
 		//double alpha = 0.5;
@@ -480,6 +551,11 @@ int main(int argc, char **argv){
 	int Imax = 50;
 	int Iils;
 
+	srand(time(NULL));
+	std::vector<int> sa = {1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20};
+	
+	  perturb(sa);
+	/*
 	readData(argc, argv, &dimension, &c);
 
 	if(dimension >= 150)
@@ -490,5 +566,6 @@ int main(int argc, char **argv){
 	GILS_RVND(Imax, Iils);
 	printf("better cost = %lf\n", cost_final);
 	return 0;
+	*/
 }
 
