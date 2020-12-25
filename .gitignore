@@ -1,1 +1,5 @@
-*.swp
+GILS-RVND/src/*.swp
+GILS-RVND/src/test.cc
+GILS-RVND/src/a.out
+GILS-RVND/tsp
+

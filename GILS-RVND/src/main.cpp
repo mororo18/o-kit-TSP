@@ -20,7 +20,6 @@ using std::chrono::microseconds;
 using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
-
 struct insertion_info {
   int node_new;
   int edge_removed;
@@ -173,13 +172,6 @@ void construct(std::vector<int> &s, double alpha){
 }	
 
 void swap_2(std::vector<int> &vec, /*struct neighbor_info &cheapest,*/ int i, int j){
-	/*
-	int aux;
-
-	aux = cheapest.neighbor[i];
-	cheapest.neighbor[i] = cheapest.neighbor[j];
-	cheapest.neighbor[j] = aux;
-	*/
 	std::iter_swap(vec.begin() + i, vec.begin() + j);
 	/*
 	for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
@@ -231,19 +223,19 @@ void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec,
 	int dif_lower;
 
 	for(int i = 1; i < dimension - 1; i++){
+		// subtract the old distances
 		int dif1 = - c[s[i]][s[i-1]] - c[s[i]][s[i+1]];
 		for(int j = i + 1; j < dimension; j++){
-			int dif = 0;
+			int dif = dif1;
 			// subtract the old distances
 			dif +=  - c[s[j]][s[j-1]] - c[s[j]][s[j+1]];
 			// add the new distances
 			dif += c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]];
 
-			if(i + 1 == j) //consecutive
+			if(i + 1 == j) //consecutive nodes 
 				dif += 2 * c[s[i]][s[j]];
 
 			//std::cout << " " << dif;
-			dif += dif1;
 			if((i == 1 && j == 2) || dif < dif_lower){
 				dif_lower = dif;
 				cheapest.i = i;
@@ -308,43 +300,79 @@ void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &v
 	*/
 }
 
+/*
+nota: mover {1,2} p pos 5, eh o msm q mover
+	  {3,4} p pos 1.
+*/
+
 void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s, int sz){
 	int dif_lower;
 	int t = 1;
 
 	for(int i = 1; i < (dimension+1) - sz; i++){
-		//k : arestas 
 		int dif1;
 		int j = i + sz - 1;
 		// subtract the old distances
 		dif1 = (- c[s[i]][s[i-1]] - c[s[j]][s[j+1]] + c[s[i-1]][s[j+1]]);
-		for(int k = 0; k < dimension; k++){
-			int pos_new;
+		//k -> edges 
+		for(int k = 0; k < dimension - sz - 1; k++){
 			int dif;
 			int dif2;
-			dif = 0;
+			int pos_new;
+			dif = dif1;
 
-			if(k < (i - 1) || k > j){
-				pos_new = k + 1;
-			}else if(k >= (i - 1) && k <= j){
+			if(k >= i - 1)
+				pos_new = k + sz + 1;
+			else
+				pos_new = k;
+
+			if(pos_new == i+ sz)
 				continue;
-			}		
+
 				
 			// add the new distances
-			dif2 = (c[s[i]][s[pos_new-1]] + c[s[pos_new]][s[j]] - c[s[pos_new]][s[pos_new-1]]); 
-			dif = dif1 + dif2;
+			dif2 = (c[s[i]][s[pos_new]] + c[s[pos_new+1]][s[j]] - c[s[pos_new+1]][s[pos_new]]); 
+			dif += dif2;
 			//std::cout << " " << dif;
 
 			if( t || dif < dif_lower){
 				dif_lower = dif;
 				cheapest.i = i;
 				cheapest.j = j;
-				cheapest.pos_new = pos_new;
+				cheapest.pos_new = pos_new+1;
 				cheapest.cost_dif = dif_lower;
 				t = 0;
 	
 			}
 		}
+		/*
+		for(int k = 0; k < dimension; k++){
+			int dif;
+			int dif2;
+			dif = dif1;
+
+			if(k >= (i - 1) && k <= j){
+				continue;
+			}else if(k ==( i + sz )){
+				continue;
+			}
+				
+			// add the new distances
+			dif2 = (c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]); 
+			dif += dif2;
+			//std::cout << " " << dif;
+
+			if( t || dif < dif_lower){
+				dif_lower = dif;
+				cheapest.i = i;
+				cheapest.j = j;
+				cheapest.pos_new = k + 1;
+				cheapest.cost_dif = dif_lower;
+				t = 0;
+	
+			}
+		}
+		*/
 		//printf("\n");
 	}
 	//printf("\n");
@@ -384,8 +412,6 @@ void RVND(std::vector<int> &s){
 		int neighbd_rand_index = rand() % neighbd_list.size();
 		int neighbd_rand = neighbd_list[neighbd_rand_index];
 
-
-		//struct neighbor_info *cheapest = (struct neighbor_info*)malloc(sizeof(struct neighbor_info)+sizeof(int)*(dimension+1));
 		struct neighbor_info cheapest ;//=  new(std::nothrow) struct neighbor_info;
 		std::vector<int> cheapest_vec;
 		cheapest_vec.reserve(dimension+1);
@@ -594,11 +620,13 @@ void GILS_RVND(int Imax, int Iils){
 			cost_final = cost_sl;
 		}
 
+		/*
 		printf("\tCurrent best result: \n");
 		for(unsigned i = 0; i <  dimension + 1; i++)
 			std::cout << " " << s_final[i];
 
 		std::cout << std::endl;
+		*/
 		printf("\tCurrent best cost: %d\n", cost_final);
 	
 	}
