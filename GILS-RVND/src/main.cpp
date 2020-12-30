@@ -381,8 +381,8 @@ void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int
 		// subtract the old distances
 		dif1 = (c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]]);
 
-		if(dif1*(-1) <= 0.01*loss)
-			continue;
+		//if(dif1*(-1) <= 0.01*loss)
+			//continue;
 		//k -> edges 
 		for(int k = 0; k < dimension - sz - 1; k++){
 			double dif;
