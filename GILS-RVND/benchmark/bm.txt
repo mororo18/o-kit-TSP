@@ -1,0 +1,41 @@
+--TSP Benchmark--
+instances/a280.tsp
+COST: 2579
+TIME: 43.381
+instances/ali535.tsp
+COST: 202454
+TIME: 1293.88
+instances/att48.tsp
+COST: 10628
+TIME: 0.189
+instances/att532.tsp
+COST: 27713
+TIME: 1172.76
+instances/bayg29.tsp
+COST: 1610
+TIME: 0.035
+instances/bays29.tsp
+COST: 2020
+TIME: 0.037
+instances/berlin52.tsp
+COST: 7542
+TIME: 0.234
+instances/bier127.tsp
+COST: 118282
+TIME: 6.341
+instances/brazil58.tsp
+COST: 25395
+TIME: 0.326
+instances/brg180.tsp
+COST: 1950
+TIME: 9.496
+instances/burma14.tsp
+COST: 3323
+TIME: 0.008
+instances/ch130.tsp
+COST: 6110
+TIME: 7.698
+instances/ch150.tsp
+COST: 6528
+TIME: 6.217
+instances/d1291.tsp
