@@ -25,11 +25,11 @@ for line in fin.readlines():
     #Treating read line
     no_endl = line.split("\n")
     my_list = no_endl[0].split()
-    
+
     if len(my_list) == 1: # Line is an instance's name
 
         instance_name = my_list[0]
-        
+
         if isFirst == False: # There's no cost or time data at the first name
             avg_cost = sum_cost #/10
             avg_time = sum_time #/10
@@ -40,11 +40,16 @@ for line in fin.readlines():
                 if avg_cost <= target[1]:
                     off_pct = 0.0
                 else:
-                    avg_1 = ( (avg_cost - target[0]) / target[0] ) * 100 	
+                    avg_1 = ( (avg_cost - target[0]) / target[0] ) * 100    
                     avg_2 = ( (avg_cost - target[1]) / target[1] ) * 100
+                    avg_1 = str(avg_1)
+                    avg_2 = str(avg_2)
+                    # formating the values
+                    avg_1 = avg_1[:5]
+                    avg_2 = avg_2[:5]
 
-                    off_pct = str(avg_1) + "% ~ " + str(avg_2)
-                    off_pct_rg = [avg_1, avg_2]
+                    off_pct = avg_1 + "% ~ " + avg_2
+                    off_pct_rg = [float(avg_1), float(avg_2)]
 
             # Verbose - Writes info to results.txt
             fout.write("\nAvg cost: ")
@@ -70,7 +75,7 @@ for line in fin.readlines():
                         fsummary.write("Good")
                     else:
                         fsummary.write("Needs improvement")
-					
+
             fsummary.write("\n")
 
         fout.write(instance_name)
@@ -79,18 +84,18 @@ for line in fin.readlines():
         # Gets target value from target.txt for given instance
         # so the error % can be calculated later.
         for tgt in ftarget.readlines():
-            
+
             #Treating read line
             tgt_list = tgt.split(":")
             tgt_name = tgt_list[0]
 
             if instance_name == tgt_name:
-                
+
                 # Continue treating the line (after if to save resources)
                 tgt_value_endl = tgt_list[1]
                 tgt_value_list = tgt_value_endl.split("\n")
                 tgt_value = tgt_value_list[0]
-                
+
                 try:
                     target = float(tgt_value)
                 except ValueError:
@@ -117,14 +122,14 @@ for line in fin.readlines():
 
     else: # Else line is cost or time
         num = my_list[1]
-        
+
         if flag == 0:
             sum_cost += int(num)
             flag = 1
         elif flag == 1:
             sum_time += float(num)
             flag = 0
-        
+
     isFirst = False
 
 
