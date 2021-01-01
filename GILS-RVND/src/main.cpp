@@ -47,6 +47,7 @@ float cost_sol_average;
 int dimension;
 double cost_rvnd_current;
 std::vector<int> candidates;
+double lambda;
 
 std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
@@ -381,8 +382,8 @@ void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int
 		// subtract the old distances
 		dif1 = (c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]]);
 
-		//if(dif1*(-1) <= 0.01*loss)
-			//continue;
+		if(dif1*(-1) <= lambda*loss)
+			continue;
 		//k -> edges 
 		for(int k = 0; k < dimension - sz - 1; k++){
 			double dif;
@@ -757,7 +758,13 @@ int main(int argc, char **argv){
 		Iils = dimension / 2;
 	else
 		Iils = dimension;
-
+	
+	if(dimension > 300)
+		lambda = 0.00007;
+	else if(dimension  > 200)
+		lambda = 0.01;
+	else	
+		lambda = 0.1;
 
 	auto t1 = high_resolution_clock::now();
 
@@ -767,6 +774,7 @@ int main(int argc, char **argv){
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
 	double res = (double)duration / 10e2;
 	std::cout << "TIME: " << res << std::endl;
+	std::cout << "Lambda: " << lambda << std::endl;
 	//std::cout << "Construction time: " << construct_t/10e5 << std::endl;
 	//std::cout << "Swap time: " << swap_t/10e5 << std::endl;
 	//std::cout << "two_opt time: " << two_opt_t/10e5 << std::endl;

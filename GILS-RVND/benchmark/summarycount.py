@@ -1,5 +1,14 @@
-fa = open("summary.txt", "a")
-fr = open("summary.txt", "r")
+#!/usr/bin/python3
+import glob
+import os
+
+files = glob.glob('results/bm*.txt')
+bm_file = max(files, key=os.path.getmtime)
+
+summary_file = "results/summary-" + bm_file[len('results/bm')+1:]
+
+fa = open(summary_file, "a")
+fr = open(summary_file, "r")
 
 good = 0
 optimal = 0

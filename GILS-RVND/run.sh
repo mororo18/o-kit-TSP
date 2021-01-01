@@ -1,25 +1,32 @@
 #!/bin/bash
 
 echo "--TSP Benchmark--"
-echo "--TSP Benchmark--" > ./benchmark/bm.txt
+FILENAME="./benchmark/results/bm-$(date +"%FT%T").txt"
 
 make
 
 k=1
 for instance in instances/*; do
-	echo $instance >> ./benchmark/bm.txt
+	echo $instance >> ${FILENAME}
 
 	echo "Running $instance"
 	echo "Instance $k of 67" 
 
 	for i in {1..1}; do
-		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ./benchmark/bm.txt
+		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
 	done
 
 	k=$(($k + 1))
+	if (("$k" >"1")); then
+		break
+	fi
 done
 
-echo "-" >> ./benchmark/bm.txt
+echo "-" >> ${FILENAME}
+
+if [ `stat -c %A benchmark/summarycount.py | sed 's/...\(.\).\+/\1/'` != "x" ]; then
+  chmod u+x benchmark/summarycount.py
+fi
 
 echo "Running bm.py to compute averages..."
 

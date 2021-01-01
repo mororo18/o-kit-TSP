@@ -1,10 +1,24 @@
-fin = open("bm.txt", "r")               # Results from running tsp 10 times for each instance
-fout = open("results.txt", "w+")        # Output file
-ftarget = open("target.txt", "r")       # Target average results
-fsummary = open("summary.txt", "w+")    # Results summary, looking at off percentage
+#!/usr/bin/python3
+import glob
+import os
+
+# grab the latest benchmark data
+list_of_files = glob.glob('results/bm*.txt') 
+bm_file = max(list_of_files, key=os.path.getmtime)
+print(bm_file)
+
+results_file = "results/results-" + bm_file[len('results/bm')+1:]
+summary_file = "results/summary-" + bm_file[len('results/bm')+1:]
+
+fin = open(bm_file, "r")              # Results from running tsp 10 times for each instance
+fout = open(results_file, "w+")        # Output file
+ftarget = open("target_data", "r")       # Target average results
+fsummary = open(summary_file, "w+")    # Results summary, looking at off percentage
 
 isFirst = True
 flag = 0 # 0 is cost 1 is time
+sum_cost = 0
+sum_time = 0
 
 for line in fin.readlines():
 
@@ -20,7 +34,17 @@ for line in fin.readlines():
             avg_cost = sum_cost #/10
             avg_time = sum_time #/10
 
-            off_pct = ( (avg_cost - target) / target ) * 100
+			try:
+				off_pct = ( (avg_cost - target) / target ) * 100
+			except ValueError:
+				if avg_cost <= target[1]:
+					off_pct = 0.0
+				else:
+					avg_1 = ( (avg_cost - target[0]) / target[0] ) * 100 	
+					avg_2 = ( (avg_cost - target[1]) / target[1] ) * 100
+
+					off_pct = str(avg_1) + "% ~ " str(avg_2)
+					off_pct_rg = [avg_1, avg_2]
 
             # Verbose - Writes info to results.txt
             fout.write("\nAvg cost: ")
@@ -28,17 +52,25 @@ for line in fin.readlines():
             fout.write("\nAvg time: ")
             fout.write(str(avg_time))
             fout.write("\nOff percentage: ")
-            fout.write(str(off_pct))
+            fout.write(str(off_pct)+"%")
             fout.write("\n\n")
 
             # Summary - Writes info to summary.txt
             fsummary.write(" --- ")
             if off_pct == 0:
                 fsummary.write("Optimal!")
-            elif off_pct <= 0.5:
-                fsummary.write("Good")
             else:
-                fsummary.write("Needs improvement")
+				try:
+					if off_pct <= 0.5:
+						fsummary.write("Good")
+					else:
+						fsummary.write("Needs improvement")
+				except ValueError:
+					if off_pct_rg[0] <= 0.5:
+						fsummary.write("Good")
+					else:
+						fsummary.write("Needs improvement")
+					
             fsummary.write("\n")
 
         fout.write(instance_name)
@@ -59,7 +91,19 @@ for line in fin.readlines():
                 tgt_value_list = tgt_value_endl.split("\n")
                 tgt_value = tgt_value_list[0]
                 
-                target = float(tgt_value)
+				try:
+					target = float(tgt_value)
+				except ValueError:
+					# Case of result as a range
+					target = tgt_value.split(',')
+
+					x1 = target[0].split('[')
+					x1 = x1[1]
+
+					x2 = target[1].split(']')
+					x2 = x2[0]
+
+					target = [float(x1), float(x2)]
 
                 ftarget.seek(0,0)
 
