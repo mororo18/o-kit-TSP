@@ -28,13 +28,14 @@ if [ `stat -c %A benchmark/summarycount.py | sed 's/...\(.\).\+/\1/'` != "x" ]; 
   chmod u+x benchmark/summarycount.py
 fi
 
-echo "Running bm.py to compute averages..."
+if [ `stat -c %A benchmark/bm.py | sed 's/...\(.\).\+/\1/'` != "x" ]; then
+  chmod u+x benchmark/bm.py
+fi
 
-cd benchmark
-python3 bm.py
+echo "Running bm.py to compute averages..."
+./benchmark/bm.py
 
 echo "Finishing up summary..."
-python3 summarycount.py
-cd ..
+./benchmark/summarycount.py
 
 echo "Benchmark completed."

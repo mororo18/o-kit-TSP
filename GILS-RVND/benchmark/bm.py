@@ -34,17 +34,17 @@ for line in fin.readlines():
             avg_cost = sum_cost #/10
             avg_time = sum_time #/10
 
-			try:
-				off_pct = ( (avg_cost - target) / target ) * 100
-			except ValueError:
-				if avg_cost <= target[1]:
-					off_pct = 0.0
-				else:
-					avg_1 = ( (avg_cost - target[0]) / target[0] ) * 100 	
-					avg_2 = ( (avg_cost - target[1]) / target[1] ) * 100
+            try:
+                off_pct = ( (avg_cost - target) / target ) * 100
+            except TypeError:
+                if avg_cost <= target[1]:
+                    off_pct = 0.0
+                else:
+                    avg_1 = ( (avg_cost - target[0]) / target[0] ) * 100 	
+                    avg_2 = ( (avg_cost - target[1]) / target[1] ) * 100
 
-					off_pct = str(avg_1) + "% ~ " str(avg_2)
-					off_pct_rg = [avg_1, avg_2]
+                    off_pct = str(avg_1) + "% ~ " + str(avg_2)
+                    off_pct_rg = [avg_1, avg_2]
 
             # Verbose - Writes info to results.txt
             fout.write("\nAvg cost: ")
@@ -60,16 +60,16 @@ for line in fin.readlines():
             if off_pct == 0:
                 fsummary.write("Optimal!")
             else:
-				try:
-					if off_pct <= 0.5:
-						fsummary.write("Good")
-					else:
-						fsummary.write("Needs improvement")
-				except ValueError:
-					if off_pct_rg[0] <= 0.5:
-						fsummary.write("Good")
-					else:
-						fsummary.write("Needs improvement")
+                try:
+                    if off_pct <= 0.5:
+                        fsummary.write("Good")
+                    else:
+                        fsummary.write("Needs improvement")
+                except TypeError:
+                    if off_pct_rg[0] <= 0.5:
+                        fsummary.write("Good")
+                    else:
+                        fsummary.write("Needs improvement")
 					
             fsummary.write("\n")
 
@@ -91,19 +91,19 @@ for line in fin.readlines():
                 tgt_value_list = tgt_value_endl.split("\n")
                 tgt_value = tgt_value_list[0]
                 
-				try:
-					target = float(tgt_value)
-				except ValueError:
-					# Case of result as a range
-					target = tgt_value.split(',')
+                try:
+                    target = float(tgt_value)
+                except ValueError:
+                    # Case of result as a range
+                    target = tgt_value.split(',')
 
-					x1 = target[0].split('[')
-					x1 = x1[1]
+                    x1 = target[0].split('[')
+                    x1 = x1[1]
 
-					x2 = target[1].split(']')
-					x2 = x2[0]
+                    x2 = target[1].split(']')
+                    x2 = x2[0]
 
-					target = [float(x1), float(x2)]
+                    target = [float(x1), float(x2)]
 
                 ftarget.seek(0,0)
 
