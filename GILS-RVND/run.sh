@@ -1,5 +1,42 @@
 #!/bin/bash
 
+larger=0
+smaler=0
+
+usage()
+{
+    echo "Usage:"
+    echo "    ./run.sh -l	    Run the benchmark test just on the LARGERS instances (size >= 1500)."
+    echo "    ./run.sh -s           Run the benchmark test just on the SMALLERS instances (size < 1500)."
+}
+
+larger=0
+smaller=0
+
+while getopts ":ls" opt; do
+    case ${opt} in
+	l)
+	    $larger=1
+	    ;;
+	s)
+	    $smaller=1
+	    ;;
+	*)
+	    usage
+	    exit 1
+	    ;;
+    esac
+done
+
+if [[ $large -eq 0  && $smaler -eq 0 ]]
+then
+    usage
+    exit 1
+fi
+
+shift $((OPTIND-1))
+exit 0
+
 echo "--TSP Benchmark--"
 FILENAME="./benchmark/results/bm-$(date +"%FT%T").txt"
 
@@ -17,9 +54,9 @@ for instance in instances/*; do
 	done
 
 	k=$(($k + 1))
-	if (("$k" >"1")); then
-		break
-	fi
+	#if (("$k" >"1")); then
+		#break
+	#fi
 done
 
 echo "-" >> ${FILENAME}
