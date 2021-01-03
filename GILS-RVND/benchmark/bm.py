@@ -30,7 +30,7 @@ for line in fin.readlines():
 
         instance_name = my_list[0]
 
-        if isFirst == False: # There's no cost or time data at the first name
+        if isFirst == False and tgt_find: # There's no cost or time data at the first name
             avg_cost = sum_cost #/10
             avg_time = sum_time #/10
 
@@ -78,8 +78,6 @@ for line in fin.readlines():
 
             fsummary.write("\n")
 
-        fout.write(instance_name)
-        fsummary.write(instance_name)
 
         # Gets target value from target.txt for given instance
         # so the error % can be calculated later.
@@ -89,7 +87,11 @@ for line in fin.readlines():
             tgt_list = tgt.split(":")
             tgt_name = tgt_list[0]
 
+            tgt_find = 0
+
             if instance_name == tgt_name:
+                print(tgt_name)
+                tgt_find = 1
 
                 # Continue treating the line (after if to save resources)
                 tgt_value_endl = tgt_list[1]
@@ -110,17 +112,29 @@ for line in fin.readlines():
 
                     target = [float(x1), float(x2)]
 
-                ftarget.seek(0,0)
 
                 break
+
+        ftarget.seek(0,0)
+
+        if instance_name == "-":
+            exit(1)
+
+        if not tgt_find:
+            message_results = "Couldn't find optimal data for " + instance_name + "\n\n"
+            message_summary = instance_name + " --- Not found\n"
+            fout.write(message_results)
+            fsummary.write(message_summary)
+            print("Couldn't find \"{}\"".format(instance_name))
+        else:
+            fout.write(instance_name)
+            fsummary.write(instance_name)
 
         #Reset total cost and time
         sum_cost = 0
         sum_time = 0
 
-
-
-    else: # Else line is cost or time
+    elif tgt_find: # Else line is cost or time
         num = my_list[1]
 
         if flag == 0:
