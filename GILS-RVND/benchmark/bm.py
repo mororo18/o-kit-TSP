@@ -5,7 +5,6 @@ import os
 # grab the latest benchmark data
 list_of_files = glob.glob('results/bm*.txt') 
 bm_file = max(list_of_files, key=os.path.getmtime)
-print(bm_file)
 
 results_file = "results/results-" + bm_file[len('results/bm')+1:]
 summary_file = "results/summary-" + bm_file[len('results/bm')+1:]
@@ -62,7 +61,7 @@ for line in fin.readlines():
 
             # Summary - Writes info to summary.txt
             fsummary.write(" --- ")
-            if off_pct == 0:
+            if off_pct <= 0:
                 fsummary.write("Optimal!")
             else:
                 try:
@@ -90,7 +89,6 @@ for line in fin.readlines():
             tgt_find = 0
 
             if instance_name == tgt_name:
-                print(tgt_name)
                 tgt_find = 1
 
                 # Continue treating the line (after if to save resources)
@@ -125,7 +123,6 @@ for line in fin.readlines():
             message_summary = instance_name + " --- Not found\n"
             fout.write(message_results)
             fsummary.write(message_summary)
-            print("Couldn't find \"{}\"".format(instance_name))
         else:
             fout.write(instance_name)
             fsummary.write(instance_name)

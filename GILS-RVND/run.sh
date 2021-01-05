@@ -2,21 +2,25 @@
 
 usage()
 {
-    echo "Usage:"
-    echo "    ./run.sh -l       Run the benchmark test just on the LARGERS instances (size >= 1500)."
-    echo "    ./run.sh -s       Run the benchmark test just on the SMALLERS instances (size < 1500)."
+    echo "Usage: Range from ARG1 to ARG2"
+    echo " "
+    echo "      ./run.sh -s [ARG1] -l [ARG2] "
+    echo " "
+    echo "      -l      The larger instance size. "
+    echo "      -s      The smaller instance size. "
+    echo " "
 }
 
 larger=0
 smaller=0
 
-while getopts "l s" opt; do
+while getopts "l: s:" opt; do
     case ${opt} in
 	l)
-	    larger=1
+	    larger=$OPTARG
 	    ;;
 	s)
-	    smaller=1
+	    smaller=$OPTARG
 	    ;;
 	*)
 	    usage
@@ -45,10 +49,10 @@ for instance in instances/*; do
 
     instance_sz=${instance//[!0-9]/}
 
-    if [[ $instance_sz -ge 200 && $larger -eq 0 ]]
+    if [[ $instance_sz -gt $larger && $larger -ne 0 ]]
     then
         continue
-    elif [[ $instance_sz -lt 200 && $smaller -eq 0 ]]
+    elif [[ $instance_sz -lt $smaller && $smaller -ne 0 ]]
     then
         continue
     fi
