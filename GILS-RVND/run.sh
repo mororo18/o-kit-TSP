@@ -8,19 +8,24 @@ usage()
     echo " "
     echo "      -l      The larger instance size. "
     echo "      -s      The smaller instance size. "
+    echo "      -t      Times that each instance will run. "
     echo " "
 }
 
 larger=0
 smaller=0
+t=1
 
-while getopts "l: s:" opt; do
+while getopts "l: s: t:" opt; do
     case ${opt} in
 	l)
 	    larger=$OPTARG
 	    ;;
 	s)
 	    smaller=$OPTARG
+	    ;;
+	t)
+	    t=$OPTARG
 	    ;;
 	*)
 	    usage
@@ -44,6 +49,7 @@ make
 
 k=1
 files=$(ls instances/ | wc -l)
+start=$(date +%s)
 
 for instance in instances/*; do
 
@@ -61,8 +67,9 @@ for instance in instances/*; do
 	echo "Running $instance"
 	echo "Instance $k of $files" 
 
-	for i in {1..1}; do
+	for i in $(seq 1 $t); do
 		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
+        echo "$t"
 	done
 
 	k=$(($k + 1))
@@ -84,9 +91,12 @@ fi
 cd benchmark/
 
 echo "Running bm.py to compute averages..."
-./bm.py
+./bm.py $t
 
 echo "Finishing up summary..."
 ./summarycount.py
 
 echo "Benchmark completed."
+
+end=`date +%s`
+echo "Execution time was `expr $end - $start` seconds."

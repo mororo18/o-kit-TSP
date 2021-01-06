@@ -1,6 +1,14 @@
 #!/usr/bin/python3
+import sys
 import glob
 import os
+
+if len(sys.argv) > 2:
+    print("Unexpected arguments")
+    exit()
+elif len(sys.argv) < 2:
+    print("Missing argument")
+    exit()
 
 # grab the latest benchmark data
 list_of_files = glob.glob('results/bm*.txt') 
@@ -30,8 +38,8 @@ for line in fin.readlines():
         instance_name = my_list[0]
 
         if isFirst == False and tgt_find: # There's no cost or time data at the first name
-            avg_cost = sum_cost #/10
-            avg_time = sum_time #/10
+            avg_cost = sum_cost / int(sys.argv[1])
+            avg_time = sum_time / int(sys.argv[1])
 
             try:
                 off_pct = ( (avg_cost - target) / target ) * 100
