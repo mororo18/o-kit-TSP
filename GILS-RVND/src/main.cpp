@@ -141,7 +141,7 @@ void construct(std::vector<int> &s, double alpha){
        sum_t += candidates[i];
      */
 
-    for(int i = 0; i < subtour_inicial; ++i){
+    for(int i = subtour_inicial; --i;){
         int node_rand_index = rand() % candidates.size();
         int node_rand = candidates[node_rand_index];
 
@@ -364,18 +364,16 @@ if(cheapest.cost_dif < 0)
 void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s, int sz){
     bool t = 1;
     int dif_lower;
-    int a;
-    int b;
-    double loss;
-    loss = 2*cost_total_average - cost_sol_average;
+    //double loss;
+    //loss = 2*cost_total_average - cost_sol_average;
 
     for(int i = 1, j = sz + i - 1; i < (dimension+1) - sz ; ++i, ++j){
         bool l = 1;
         // subtract the old distances
         int dif1 = c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]];
 
-        if(dif1*(-1) <= lambda*loss)
-            continue;
+        //if(dif1*(-1) <= lambda*loss)
+            //continue;
         //k -> edges 
         for(int k = 0; k < dimension -sz - 1; ++k){
 
@@ -492,32 +490,32 @@ void RVND(std::vector<int> &s){
             case SWAP:
                 //printf("SWAP\n");
                 after();
-                neighbor_swap_better(cheapest, cheapest_vec, s);
+                neighbor_swap_better(cheapest, s, cheapest_vec);
                 before(SWAP);
                 break;
             case TWO_OPT:
                 //printf("TWO_OPT \n");
                 after();
-                neighbor_two_opt_better(cheapest, cheapest_vec, s);
+                neighbor_two_opt_better(cheapest, s, cheapest_vec);
                 before(TWO_OPT);
                 break;				
             case REINSERTION:
                 //printf("REINSERTION \n");
-                after();
-                neighbor_reinsertion_better(cheapest, cheapest_vec, s, REINSERTION);
-                before(REINSERTION);
+                //after();
+                neighbor_reinsertion_better(cheapest, s, cheapest_vec, REINSERTION);
+                //before(REINSERTION);
                 break;				
             case OR_OPT2:
                 //printf("OR_OPT2 \n");
-                after();
-                neighbor_reinsertion_better(cheapest, cheapest_vec, s, OR_OPT2);
-                before(OR_OPT2);
+                //after();
+                neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT2);
+                //before(OR_OPT2);
                 break;				
             case OR_OPT3:
                 //printf("OR_OPT3 \n");
-                after();
-                neighbor_reinsertion_better(cheapest, cheapest_vec, s, OR_OPT3);
-                before(OR_OPT3);
+                //after();
+                neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT3);
+                //before(OR_OPT3);
                 break;				
         }
 
@@ -534,12 +532,13 @@ void RVND(std::vector<int> &s){
          */
 
         if(cheapest.cost_dif < 0){
-            s.clear();
-            s = cheapest_vec;
+            //s.clear();
+            //s = cheapest_vec;
             cost_calc(s, &cost_rvnd_current);
             neighbd_list_repopulate(neighbd_list);
         }else{
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
+            s = cheapest_vec;
         }
 
         //delete cheapest;

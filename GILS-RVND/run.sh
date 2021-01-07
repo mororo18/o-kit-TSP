@@ -43,7 +43,8 @@ fi
 shift $((OPTIND-1))
 
 echo "--TSP Benchmark--"
-FILENAME="./benchmark/results/bm-$(date +"%FT%T").txt"
+FILENAME="benchmark/results/bm-$(date +"%FT%T").txt"
+SUMMARY="results/summary-$(date +"%FT%T").txt"
 
 make
 
@@ -69,7 +70,6 @@ for instance in instances/*; do
 
 	for i in $(seq 1 $t); do
 		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
-        echo "$t"
 	done
 
 	k=$(($k + 1))
@@ -98,5 +98,11 @@ echo "Finishing up summary..."
 
 echo "Benchmark completed."
 
+echo " "
+echo "SUMMARY:"
+echo " "
+cat $SUMMARY
+echo " "
 end=`date +%s`
 echo "Execution time was `expr $end - $start` seconds."
+echo " "
