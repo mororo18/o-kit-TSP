@@ -46,19 +46,18 @@ float cost_total_average;
 float cost_sol_average;
 int dimension;
 int cost_rvnd_current;
-std::vector<int> candidates;
 double lambda;
 
 std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
 int sum_t = 0;
-long swap_t  = 0;
-long two_opt_t  = 0;
-long reinsertion_t  = 0;
-long opt2_t = 0;
-long opt3_t = 0;
-long construct_t = 0;
+//long swap_t  = 0;
+//long two_opt_t  = 0;
+//long reinsertion_t  = 0;
+//long opt2_t = 0;
+//long opt3_t = 0;
+//long construct_t = 0;
 
 void cost_average_t(){
     float sum = 0;
@@ -82,6 +81,7 @@ void cost_average_s(int n){
     cost_sol_average = n / dimension;
 }
 
+/*
 void after(){
     t3 = high_resolution_clock::now();
 }
@@ -110,6 +110,7 @@ void before(int a){
             break;				
     }
 }
+*/
 
 bool cost_compare(const insertion_info &a, const insertion_info &b){
     return a.cost < b.cost;
@@ -126,6 +127,7 @@ void construct(std::vector<int> &s, double alpha){
 
     //s.clear();
     s = {1, 1};
+    std::vector<int> candidates;
     candidates.reserve(dimension);
     candidates_load(candidates, dimension);
     int subtour_inicial = 3;
@@ -496,15 +498,15 @@ void GILS_RVND(int Imax, int Iils){
         double alpha = 1.0 / aux;
         //printf("alpha  = %lf\n", alpha);
 
-        printf("[+] Search %d\n", i+1);
-        printf("\t[+] Constructing..\n");	
+        //printf("[+] Search %d\n", i+1);
+        //printf("\t[+] Constructing..\n");	
         //after();
         construct(s, alpha);
         sl = s;
         int Iterils = 0;
         //before(6);
 
-        printf("\t[+] Looking for the best Neighbor..\n");
+        //printf("\t[+] Looking for the best Neighbor..\n");
         int cost_rvnd_best;
         cost_calc(sl, &cost_rvnd_best);
 
@@ -529,7 +531,7 @@ void GILS_RVND(int Imax, int Iils){
             cost_final = cost_sl;
         }
 
-        printf("\tCurrent best cost: %d\n", cost_final);
+        //printf("\tCurrent best cost: %d\n", cost_final);
 
     }
     printf("COST: %d\n", cost_final);
