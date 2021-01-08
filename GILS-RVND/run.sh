@@ -106,3 +106,7 @@ echo " "
 end=`date +%s`
 echo "Execution time was `expr $end - $start` seconds."
 echo " "
+echo -ne "\007"; sleep 0.2s ;
+echo -ne "\007"; sleep 0.2s ;
+echo -ne "\007";
+

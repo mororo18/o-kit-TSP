@@ -52,6 +52,7 @@ double lambda;
 std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
+int sum_t = 0;
 long swap_t  = 0;
 long two_opt_t  = 0;
 long reinsertion_t  = 0;
@@ -118,15 +119,8 @@ void candidates_load(std::vector<int> &cand, int dim){
     for(int i = 2; i <= dim; ++i){
         cand.push_back(i);
     }
-    /*
-       for(unsigned i = 0; i < cand.size(); i++)
-       std::cout << " " << cand[i];
-
-       std::cout << std::endl;
-     */
 }	
 
-int sum_t = 0;
 
 void construct(std::vector<int> &s, double alpha){
 
@@ -135,11 +129,6 @@ void construct(std::vector<int> &s, double alpha){
     candidates.reserve(dimension);
     candidates_load(candidates, dimension);
     int subtour_inicial = 3;
-    /*
-       sum_t = 0;
-       for(unsigned i = 0; i < candidates.size(); i++)
-       sum_t += candidates[i];
-     */
 
     for(int i = subtour_inicial; --i;){
         int node_rand_index = rand() % candidates.size();
@@ -155,7 +144,6 @@ void construct(std::vector<int> &s, double alpha){
         int dim = s.size() - 1;
 
         int insertion_possiblts = (dim * candidates.size());
-        //printf("possibilidades  %d\n", insertion_possiblts);
         std::vector<struct insertion_info> insertion_cost (insertion_possiblts);
 
         for(int i = 0, j = 1, l = 0; i < dim; ++i, ++j){   
@@ -186,36 +174,18 @@ void construct(std::vector<int> &s, double alpha){
                 candidates.erase(candidates.begin() + i);
                 break;
             }
-        };
+        }
 
-        /*
-           for(unsigned i = 0; i < s.size(); i++)
-           std::cout << " " << s[i];
-
-           std::cout << std::endl;
-         */
     }
 
 }	
 
 inline void swap_2(std::vector<int> &vec, /*struct neighbor_info &cheapest,*/ int i, int j){
     std::iter_swap(vec.begin() + i, vec.begin() + j);
-    /*
-       for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
-       std::cout << " " << cheapest->neighbor[i];
-
-       std::cout << std::endl;
-     */
 }
 
 inline void two_opt(std::vector<int> &vec, /*struct neighbor_info &cheapest,*/ int i, int j){
     std::reverse(vec.begin() + i, vec.begin() + j+1);
-    /*
-       for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
-       std::cout << " " << cheapest->neighbor[i];
-
-       std::cout << std::endl;
-     */
 }
 
 inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */ int i, int j, int pos){
@@ -246,7 +216,7 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
 
 }
 
-void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
+inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
     int dif_lower;
     bool t = 1;
     //int loss;
@@ -259,18 +229,12 @@ void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec,
         //if(dif1*(-1) <= loss)
         //continue;
         for(int j = i + 1; j < dimension; ++j){
-            // subtract the old distances
-            //dif +=  ;
-            //if(dif > 0)
-            //continue;
-            // add the new distances
             int dif;
             if(i + 1 != j) //consecutive nodes 
                 dif = dif3 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j-1]] - c[s[j]][s[j+1]];
             else
                 dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
-            //std::cout << " " << dif;
             if(dif < dif_lower || t){
                 dif_lower = dif;
                 cheapest.cost_dif = dif_lower;
@@ -285,28 +249,11 @@ void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec,
 
     if(cheapest.cost_dif < 0)
         swap_2(vec, cheapest.i, cheapest.j);
-    /*
-       for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
-       std::cout << " " << cheapest->neighbor[i];
-
-       std::cout << std::endl;
-       std::cout << "cost-dif =  " << cheapest->cost_dif << std::endl;
-     */
 }
 
-void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
+inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
     int dif_lower;
     bool t = 1;
-    /*
-       sub_sz = rand() % (dimension - 1);
-       while(sub_sz == 1 || !sub_sz)
-       sub_sz = rand() % (dimension - 1);
-     */
-
-
-    /*
-       printf("subsequence size =  %d\n", sub_sz);
-     */
 
     for(int i = 1; i < dimension - 1; ++i){
         // old distances
@@ -325,43 +272,13 @@ void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &v
             }
         }
     }
-    /*
-       for(int i = 1; i < (dimension+1) - sub_sz; i++){
-       int dif;
-       int dif1, dif2;
-       int j;
-       j = i + sub_sz - 1; // modificacao aqui
-// subtract the old distances
-dif1 = - c[s[i]][s[i-1]]  - c[s[j]][s[j+1]];
-// add the new distances
-dif2 =  (c[s[i]][s[j+1]] + c[s[j]][s[i-1]]);
 
-//std::cout << " " << dif;
-dif = dif1 + dif2;
-if((i == 1) || dif < dif_lower){
-dif_lower = dif;
-cheapest.i = i;
-cheapest.j = j;
-cheapest.cost_dif = dif_lower;
-
+    if(cheapest.cost_dif < 0)
+        two_opt(vec, cheapest.i, cheapest.j);
 }
-}
-     */
-//printf("\n");
-
-if(cheapest.cost_dif < 0)
-    two_opt(vec, cheapest.i, cheapest.j);
-    /*
-       for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
-       std::cout << " " << cheapest->neighbor[i];
-
-       std::cout << std::endl;
-       std::cout << "cost-dif =  " << cheapest->cost_dif << std::endl;
-     */
-    }
 
 
-void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s, int sz){
+inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s, int sz){
     bool t = 1;
     int dif_lower;
     //double loss;
@@ -383,18 +300,14 @@ void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int
                 l = 0;
             }
 
-
             /*
-               move the 2nd and the 3rd elements to the 6th position,
-               for example, is the same that move the 4th and the 5th 
-               elements to	the 2nd position.
+            move the 2nd and the 3rd elements to the 6th position,
+            for example, is the same that move the 4th and the 5th 
+            elements to	the 2nd position.
              */
-
 
             if(k == j + sz)
                 continue;
-
-            //int pos_new = k; 
 
             // add the new distances
             int dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
@@ -410,49 +323,12 @@ void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int
 
             }
         }
-        /*
-           for(int k = 0; k < dimension; k++){
-           int dif;
-           int dif2;
-           dif = dif1;
-
-           if(k >= i - 1 && k <= j){
-           continue;
-           }else if(k == j + sz ){
-           continue;
-           }
-
-// add the new distances
-dif2 = (c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]); 
-dif += dif2;
-//std::cout << " " << dif;
-
-if( t || dif < dif_lower){
-dif_lower = dif;
-cheapest.i = i;
-cheapest.j = j;
-cheapest.pos_new = k + 1;
-cheapest.cost_dif = dif_lower;
-t = 0;
-
-}
-}
-         */
-//printf("\n");
-}
-//printf("\n");
-
-//printf("\nsize = %d\ni = %d\nj = %d\npos = %d\n", sze, cheapest->i, cheapest->j, cheapest->pos_new);
-if(cheapest.cost_dif < 0)
-    reinsert(vec, cheapest.i, cheapest.j, cheapest.pos_new);
-
-    /*
-       for(unsigned i = 0; i < cheapest->neighbor.size(); i++)
-       std::cout << " " << cheapest->neighbor[i];
-
-       std::cout << std::endl;
-     */
     }
+
+    if(cheapest.cost_dif < 0)
+        reinsert(vec, cheapest.i, cheapest.j, cheapest.pos_new);
+
+}
 
 inline void cost_calc(std::vector<int> &s, int *cost_best){
     *cost_best = 0;
@@ -480,7 +356,7 @@ void RVND(std::vector<int> &s){
         int neighbd_rand_index = rand() % neighbd_list.size();
         int neighbd_rand = neighbd_list[neighbd_rand_index];
 
-        struct neighbor_info cheapest ;//=  new(std::nothrow) struct neighbor_info;
+        struct neighbor_info cheapest;
         std::vector<int> cheapest_vec;
         cheapest_vec.reserve(dimension+1);
         cheapest_vec = s;
@@ -488,48 +364,31 @@ void RVND(std::vector<int> &s){
 
         switch(neighbd_rand){
             case SWAP:
-                //printf("SWAP\n");
-                after();
+                //after();
                 neighbor_swap_better(cheapest, s, cheapest_vec);
-                before(SWAP);
+                //before(SWAP);
                 break;
             case TWO_OPT:
-                //printf("TWO_OPT \n");
-                after();
+                //after();
                 neighbor_two_opt_better(cheapest, s, cheapest_vec);
-                before(TWO_OPT);
+                //before(TWO_OPT);
                 break;				
             case REINSERTION:
-                //printf("REINSERTION \n");
                 //after();
                 neighbor_reinsertion_better(cheapest, s, cheapest_vec, REINSERTION);
                 //before(REINSERTION);
                 break;				
             case OR_OPT2:
-                //printf("OR_OPT2 \n");
                 //after();
                 neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT2);
                 //before(OR_OPT2);
                 break;				
             case OR_OPT3:
-                //printf("OR_OPT3 \n");
                 //after();
                 neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT3);
                 //before(OR_OPT3);
                 break;				
         }
-
-        /*
-           int sum = 0;
-           for(int i = 1; i < cheapest->neighbor.size() -1; i++)
-           sum += cheapest->neighbor[i];
-
-           if(sum != sum_t){
-        //printf("sum %d\n"
-        //"sum_t %d\n", sum, sum_t);
-        exit(-1);
-        }
-         */
 
         if(cheapest.cost_dif < 0){
             //s.clear();
@@ -541,18 +400,10 @@ void RVND(std::vector<int> &s){
             s = cheapest_vec;
         }
 
-        //delete cheapest;
-        //free(cheapest);
-        //delete &(cheapest->neighbor);
-        /*
-           if (cheapest != NULL)     
-           operator delete cheapest;
-         */
     }
 }
 
 void perturb(std::vector<int> &sl, std::vector<int> &s){
-    //printf("for -> perturb\n");
 
     s.clear();
     s = sl;
@@ -585,17 +436,13 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     //int dif = 0;
     if(first_pos > second_pos){
         // elimina sub_seq1
-        //dif += - c[s[first_pos]][s[first_pos-1]] - c[s[first_pos+first_size-1]][s[first_pos+first_size]];
         s.erase(s.begin() + first_pos, s.begin() + first_pos + first_size);
         //elimina sub_seq2	
-        //dif += - c[s[second_pos]][s[second_pos-1]] - c[s[second_pos+second_size-1]][s[second_pos+second_size]];
         s.erase(s.begin() + second_pos, s.begin() + second_pos + second_size);
     }else{
         //elimina sub_seq2	
-        //dif += - c[s[second_pos]][s[second_pos-1]] - c[s[second_pos+second_size-1]][s[second_pos+second_size]];
         s.erase(s.begin() + second_pos, s.begin() + second_pos + second_size);
         // elimina sub_seq1
-        //dif += - c[s[first_pos]][s[first_pos-1]] - c[s[first_pos+first_size-1]][s[first_pos+first_size]];
         s.erase(s.begin() + first_pos, s.begin() + first_pos + first_size);
     }
 
@@ -622,41 +469,19 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     }
 
     if(sub_seq1->pos_next > sub_seq2->pos_next){
-        //dif += c[s[sub_seq1->pos_next]][s[sub_seq1->pos_next-1]] + c[s[sub_seq1->pos_next+first_size-1]][s[sub_seq1->pos_next+first_size]];
         s.insert(s.begin() + sub_seq1->pos_next, sub_seq1->seq.begin(), sub_seq1->seq.begin() + first_size);
-        //dif += c[s[sub_seq2->pos_next]][s[sub_seq2->pos_next-1]] + c[s[sub_seq2->pos_next+second_size-1]][s[sub_seq2->pos_next+second_size]];
         s.insert(s.begin() + sub_seq2->pos_next, sub_seq2->seq.begin(), sub_seq2->seq.end());
     }else{
-        //dif += c[s[sub_seq2->pos_next]][s[sub_seq2->pos_next-1]] + c[s[sub_seq2->pos_next+second_size-1]][s[sub_seq2->pos_next+second_size]];
         s.insert(s.begin() + sub_seq2->pos_next, sub_seq2->seq.begin(), sub_seq2->seq.end());
-        //dif += c[s[sub_seq1->pos_next]][s[sub_seq1->pos_next-1]] + c[s[sub_seq1->pos_next+first_size-1]][s[sub_seq1->pos_next+first_size]];
         s.insert(s.begin() + sub_seq1->pos_next, sub_seq1->seq.begin(), sub_seq1->seq.begin() + first_size);
     }
-
-    /*
-       printf("1a pos = %d\n"
-       "1a next = %d\n"
-       "1o tamanho = %d\n"
-       "2a pos = %d\n"
-       "2a next = %d\n"
-       "2o tamanho = %d\n", first_pos, sub_seq1->pos_next, first_size, second_pos, sub_seq2->pos_next, second_size);
-     */
-
-    /*
-       for(unsigned i = 0; i <  copy.size(); i++)
-       std::cout << " " << copy[i];
-
-       std::cout << std::endl;
-     */
-
-    //*current_cost = a + dif;
 
     delete sub_seq1;
     delete sub_seq2;
 }
 
 void GILS_RVND(int Imax, int Iils){
-    cost_average_t();
+    //cost_average_t();
 
     std::vector<int> s_final;
     std::vector<int> s;
@@ -673,17 +498,17 @@ void GILS_RVND(int Imax, int Iils){
 
         printf("[+] Search %d\n", i+1);
         printf("\t[+] Constructing..\n");	
-        after();
+        //after();
         construct(s, alpha);
         sl = s;
         int Iterils = 0;
-        before(6);
+        //before(6);
 
         printf("\t[+] Looking for the best Neighbor..\n");
         int cost_rvnd_best;
         cost_calc(sl, &cost_rvnd_best);
 
-        cost_average_s(cost_rvnd_best);
+        //cost_average_s(cost_rvnd_best);
         while(Iterils < Iils){
             RVND(s);
             if(cost_rvnd_current < cost_rvnd_best){
@@ -693,27 +518,17 @@ void GILS_RVND(int Imax, int Iils){
                 Iterils = 0;
             }
             perturb(sl, s);
-            //cost_calc(s, &cost_rvnd_current);
             Iterils++;
-            //printf("iter ils %d\n", Iterils);
-
         }
 
         int cost_sl;
         cost_calc(sl, &cost_sl);
-        if(i == 0 || cost_sl < cost_final){
+        if(cost_sl < cost_final || i == 0){
             s_final.clear();
             s_final =  s;
             cost_final = cost_sl;
         }
 
-        /*
-           printf("\tCurrent best result: \n");
-           for(unsigned i = 0; i <  dimension + 1; i++)
-           std::cout << " " << s_final[i];
-
-           std::cout << std::endl;
-         */
         printf("\tCurrent best cost: %d\n", cost_final);
 
     }
@@ -727,37 +542,21 @@ int main(int argc, char **argv){
 
     srand(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
     readData(argc, argv, &dimension, &c);
-    /*
-       std::vector<int> sa = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30};
-       int sum = 0;
-       for(int i = 1; i< sa.size() - 1; i++)
-       sum+=sa[i];
-       while(1){
-       int sun = 0;
-       sa = perturb(sa);
-       for(int i = 1; i< sa.size() - 1; i++)
-       sun+=sa[i];
 
-       if(sun != sum)
-       break;
-       }
-
-     */
     if(dimension >= 150)
         Iils = dimension / 2;
     else
         Iils = dimension;
 
-
+    /*
     if(dimension > 300)
         lambda = 0.00007;
     else if(dimension  > 200)
         lambda = 0.01;
     else	
         lambda = 0.1;
-    //lambda = 0.1;
+     */
 
-    //lambda = 0;
 
     auto t1 = high_resolution_clock::now();
 
@@ -768,12 +567,14 @@ int main(int argc, char **argv){
     double res = (double)duration / 10e2;
     std::cout << "TIME: " << res << std::endl;
     //std::cout << "Lambda: " << lambda << std::endl;
+    /*
     std::cout << "Construction time: " << construct_t/10e5 << std::endl;
     std::cout << "Swap time: " << swap_t/10e5 << std::endl;
     std::cout << "two_opt time: " << two_opt_t/10e5 << std::endl;
     std::cout << "reinsertion time: " << reinsertion_t/10e5 << std::endl;
     std::cout << "or_opt2 time: " << opt2_t/10e5 << std::endl;
     std::cout << "or_opt3 time: " << opt3_t /10e5<< std::endl;
+    */
     return 0;
 }
 
