@@ -192,28 +192,32 @@ inline void two_opt(std::vector<int> &vec, /*struct neighbor_info &cheapest,*/ i
 
 inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */ int i, int j, int pos){
     if(pos < i){
+        /*
         if(i == j){
             int aux = vec[i];
             vec.erase(vec.begin() + i);
             vec.insert(vec.begin() + pos, aux);
         }else{
+        */
             std::vector<int> copy;
             copy.reserve(j - i + 1);
             copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
             vec.erase(vec.begin() + i, vec.begin() + j+1);
             vec.insert(vec.begin() + pos, copy.begin(), copy.end());
-        }
+        //}
     }else{
+        /*
         if(i == j){
             vec.insert(vec.begin() + pos, vec[i]);
             vec.erase(vec.begin() + i);
         }else{
+        */
             std::vector<int> copy;
             copy.reserve(j - i + 1);
             copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
             vec.insert(vec.begin() + pos, copy.begin(), copy.end());
             vec.erase(vec.begin() + i, vec.begin() + j+1);
-        }
+        //}
     }
 
 }
@@ -399,7 +403,7 @@ void RVND(std::vector<int> &s){
             neighbd_list_repopulate(neighbd_list);
         }else{
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
-            s = cheapest_vec;
+            //s = cheapest_vec;
         }
 
     }
