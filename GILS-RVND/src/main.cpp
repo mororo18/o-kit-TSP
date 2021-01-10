@@ -222,7 +222,7 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
 
 }
 
-inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
+inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &s){
     int dif_lower;
     bool t = 1;
     //int loss;
@@ -254,10 +254,10 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
     //printf("\n");
 
     if(cheapest.cost_dif < 0)
-        swap_2(vec, cheapest.i, cheapest.j);
+        swap_2(s, cheapest.i, cheapest.j);
 }
 
-inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s){
+inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &s){
     int dif_lower;
     bool t = 1;
 
@@ -280,11 +280,11 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
     }
 
     if(cheapest.cost_dif < 0)
-        two_opt(vec, cheapest.i, cheapest.j);
+        two_opt(s, cheapest.i, cheapest.j);
 }
 
 
-inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &vec, std::vector<int> &s, int sz){
+inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &s, int sz){
     bool t = 1;
     int dif_lower;
     //double loss;
@@ -332,7 +332,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
     }
 
     if(cheapest.cost_dif < 0)
-        reinsert(vec, cheapest.i, cheapest.j, cheapest.pos_new);
+        reinsert(s, cheapest.i, cheapest.j, cheapest.pos_new);
 
 }
 
@@ -363,35 +363,35 @@ void RVND(std::vector<int> &s){
         int neighbd_rand = neighbd_list[neighbd_rand_index];
 
         struct neighbor_info cheapest;
-        std::vector<int> cheapest_vec;
-        cheapest_vec.reserve(dimension+1);
-        cheapest_vec = s;
+        //std::vector<int> cheapest_vec;
+        //cheapest_vec.reserve(dimension+1);
+        //cheapest_vec = s;
 
 
         switch(neighbd_rand){
             case SWAP:
                 //after();
-                neighbor_swap_better(cheapest, s, cheapest_vec);
+                neighbor_swap_better(cheapest, s);
                 //before(SWAP);
                 break;
             case TWO_OPT:
                 //after();
-                neighbor_two_opt_better(cheapest, s, cheapest_vec);
+                neighbor_two_opt_better(cheapest, s);
                 //before(TWO_OPT);
                 break;				
             case REINSERTION:
                 //after();
-                neighbor_reinsertion_better(cheapest, s, cheapest_vec, REINSERTION);
+                neighbor_reinsertion_better(cheapest, s, REINSERTION);
                 //before(REINSERTION);
                 break;				
             case OR_OPT2:
                 //after();
-                neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT2);
+                neighbor_reinsertion_better(cheapest, s, OR_OPT2);
                 //before(OR_OPT2);
                 break;				
             case OR_OPT3:
                 //after();
-                neighbor_reinsertion_better(cheapest, s, cheapest_vec, OR_OPT3);
+                neighbor_reinsertion_better(cheapest, s, OR_OPT3);
                 //before(OR_OPT3);
                 break;				
         }
