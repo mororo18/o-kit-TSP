@@ -23,7 +23,7 @@ using std::chrono::high_resolution_clock;
 struct insertion_info {
     int edge_removed;
     int node_new;
-    int cost;
+    double cost;
 };
 
 struct neighbor_info{
@@ -31,7 +31,7 @@ struct neighbor_info{
     int pos_new;
     int i;
     int j;
-    int cost_dif;
+    double cost_dif;
 };
 
 struct sub_info{
@@ -45,7 +45,7 @@ double **c;
 //float cost_total_average;
 //float cost_sol_average;
 int dimension;
-int cost_rvnd_current;
+double cost_rvnd_current;
 //double lambda;
 
 //std::chrono::_V2::system_clock::time_point t3;
@@ -68,7 +68,7 @@ void cost_average_t(){
         for(int j = 1; j <= dimension; j++){
             if( c[i][j] == 0){
                 break;
-            }else{
+v           }else{
                 sum += c[i][j];
                 n++;
             }
@@ -88,9 +88,10 @@ void after(){
     t3 = high_resolution_clock::now();
 }
 
-void before(int a){
+void before(){
     t4 = high_resolution_clock::now();
 
+    construct_t += std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
     switch(a){
         case SWAP:
             swap_t += std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
@@ -115,7 +116,7 @@ void before(int a){
 */
 
 bool cost_compare(const insertion_info &a, const insertion_info &b){
-    return a.cost < b.cost;
+    return a.cost < b.cost - std::numeric_limits<double>::epsilon();
 }
 
 void candidates_load(std::vector<int> &cand, int dim){
@@ -151,7 +152,7 @@ void construct(std::vector<int> &s, double alpha){
         std::vector<struct insertion_info> insertion_cost (insertion_possiblts);
 
         for(int i = 0, j = 1, l = 0; i < dim; ++i, ++j){   
-            int a = c[s[i]][s[j]];
+            double a = c[s[i]][s[j]];
             for(auto k : candidates){
 
                 insertion_cost[l].cost = c[s[i]][k] - a + c[s[j]][k] ;  
@@ -225,25 +226,25 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
 }
 
 inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &s){
-    int dif_lower;
+    double dif_lower;
     bool t = 1;
     //int loss;
     //loss = 2*cost_total_average - cost_sol_average;
 
     for(int i = 1; i < dimension - 1; ++i){
         // subtract the old distances
-        int dif1 = - c[s[i]][s[i-1]];
-        int dif3 = dif1 - c[s[i]][s[i+1]];
+        double dif1 = - c[s[i]][s[i-1]];
+        double dif3 = dif1 - c[s[i]][s[i+1]];
         //if(dif1*(-1) <= loss)
         //continue;
         for(int j = i + 1; j < dimension; ++j){
-            int dif;
+            double dif;
             if(i + 1 != j) //consecutive nodes 
                 dif = dif3 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j-1]] - c[s[j]][s[j+1]];
             else
                 dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
-            if(dif < dif_lower || t){
+            if(dif < dif_lower -std::numeric_limits<double>::epsilon() || t){
                 dif_lower = dif;
                 cheapest.cost_dif = dif_lower;
                 cheapest.j = j;
@@ -255,20 +256,20 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
     }
     //printf("\n");
 
-    if(cheapest.cost_dif < 0)
+    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
         swap_2(s, cheapest.i, cheapest.j);
 }
 
 inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &s){
-    int dif_lower;
+    double dif_lower;
     bool t = 1;
 
     for(int i = 1; i < dimension - 1; ++i){
         // old distances
-        int dif1 = - c[s[i]][s[i-1]];
+        double dif1 = - c[s[i]][s[i-1]];
         for(int j = i + 2; j < dimension; ++j){
             // old distances    // new distances
-            int dif = dif1 - c[s[j]][s[j+1]]  + c[s[j]][s[i-1]] + c[s[i]][s[j+1]] ;
+            double dif = dif1 - c[s[j]][s[j+1]]  + c[s[j]][s[i-1]] + c[s[i]][s[j+1]] ;
 
             if(dif < dif_lower || t){
                 dif_lower = dif;
@@ -281,21 +282,21 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
         }
     }
 
-    if(cheapest.cost_dif < 0)
+    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
         two_opt(s, cheapest.i, cheapest.j);
 }
 
 
 inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &s, int sz){
     bool t = 1;
-    int dif_lower;
+    double dif_lower;
     //double loss;
     //loss = 2*cost_total_average - cost_sol_average;
 
     for(int i = 1, j = sz + i - 1; i < (dimension+1) - sz ; ++i, ++j){
         bool l = 1;
         // subtract the old distances
-        int dif1 = c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]];
+        double dif1 = c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]];
 
         //if(dif1*(-1) <= lambda*loss)
             //continue;
@@ -318,7 +319,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
                 continue;
 
             // add the new distances
-            int dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
+            double dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
             //std::cout << " " << dif;
 
             if( dif < dif_lower || t){
@@ -333,14 +334,14 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
         }
     }
 
-    if(cheapest.cost_dif < 0)
+    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
         reinsert(s, cheapest.i, cheapest.j, cheapest.pos_new);
 
 }
 
-inline void cost_calc(std::vector<int> &s, int *cost_best){
+inline void cost_calc(std::vector<int> &s, double *cost_best){
     *cost_best = 0;
-    int sum = 0;
+    double sum = 0;
     for(unsigned i = 0; i < dimension; ++i)
         sum += c[s[i]][s[i+1]];
 
@@ -398,7 +399,7 @@ void RVND(std::vector<int> &s){
                 break;				
         }
 
-        if(cheapest.cost_dif < 0){
+        if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon()){
             //s.clear();
             //s = cheapest_vec;
             //cost_calc(s, &cost_rvnd_current);
@@ -490,7 +491,6 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
 }
 
 void GILS_RVND(int Imax, int Iils){
-    //cost_average_t();
 
     std::vector<int> s_final;
     std::vector<int> s;
@@ -498,7 +498,7 @@ void GILS_RVND(int Imax, int Iils){
     s_final.reserve(dimension+1);
     s.reserve(dimension+1);
     sl.reserve(dimension+1);
-    int cost_final;
+    double cost_final;
     //if(dimension > 300)
     for(int i = 0; i < Imax; ++i){
         int aux = rand() % 10 + 1;
@@ -511,17 +511,16 @@ void GILS_RVND(int Imax, int Iils){
         construct(s, alpha);
         sl = s;
         int Iterils = 0;
-        //before(6);
+        //before();
 
         //printf("\t[+] Looking for the best Neighbor..\n");
-        int cost_rvnd_best;
+        double cost_rvnd_best;
         cost_calc(sl, &cost_rvnd_best);
 
-        //cost_average_s(cost_rvnd_best);
         while(Iterils < Iils){
             RVND(s);
             cost_calc(s, &cost_rvnd_current);
-            if(cost_rvnd_current < cost_rvnd_best){
+            if(cost_rvnd_current < cost_rvnd_best - std::numeric_limits<double>::epsilon()){
                 sl.clear();
                 sl = s;
                 cost_rvnd_best = cost_rvnd_current;
@@ -532,9 +531,9 @@ void GILS_RVND(int Imax, int Iils){
             Iterils++;
         }
 
-        int cost_sl;
+        double cost_sl;
         cost_calc(sl, &cost_sl);
-        if(cost_sl < cost_final || i == 0){
+        if(cost_sl < cost_final - std::numeric_limits<double>::epsilon()|| i == 0){
             s_final.clear();
             s_final =  s;
             cost_final = cost_sl;
@@ -543,7 +542,7 @@ void GILS_RVND(int Imax, int Iils){
         //printf("\tCurrent best cost: %d\n", cost_final);
 
     }
-    printf("COST: %d\n", cost_final);
+    printf("COST: %lf\n", cost_final);
 }
 
 
