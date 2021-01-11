@@ -42,14 +42,14 @@ struct sub_info{
 };
 
 double **c;
-float cost_total_average;
-float cost_sol_average;
+//float cost_total_average;
+//float cost_sol_average;
 int dimension;
 int cost_rvnd_current;
-double lambda;
+//double lambda;
 
-std::chrono::_V2::system_clock::time_point t3;
-std::chrono::_V2::system_clock::time_point t4;
+//std::chrono::_V2::system_clock::time_point t3;
+//std::chrono::_V2::system_clock::time_point t4;
 
 int sum_t = 0;
 //long swap_t  = 0;
@@ -59,6 +59,7 @@ int sum_t = 0;
 //long opt3_t = 0;
 //long construct_t = 0;
 
+/*
 void cost_average_t(){
     float sum = 0;
     int n = 0;
@@ -80,6 +81,7 @@ void cost_average_s(int n){
 
     cost_sol_average = n / dimension;
 }
+*/
 
 /*
 void after(){
@@ -198,7 +200,7 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
             vec.erase(vec.begin() + i);
             vec.insert(vec.begin() + pos, aux);
         }else{
-        */
+            */
             std::vector<int> copy;
             copy.reserve(j - i + 1);
             copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
@@ -211,7 +213,7 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
             vec.insert(vec.begin() + pos, vec[i]);
             vec.erase(vec.begin() + i);
         }else{
-        */
+            */
             std::vector<int> copy;
             copy.reserve(j - i + 1);
             copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
@@ -399,7 +401,8 @@ void RVND(std::vector<int> &s){
         if(cheapest.cost_dif < 0){
             //s.clear();
             //s = cheapest_vec;
-            cost_calc(s, &cost_rvnd_current);
+            //cost_calc(s, &cost_rvnd_current);
+            //cost_rvnd_current += cheapest.cost_dif;
             neighbd_list_repopulate(neighbd_list);
         }else{
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
@@ -517,10 +520,12 @@ void GILS_RVND(int Imax, int Iils){
         //cost_average_s(cost_rvnd_best);
         while(Iterils < Iils){
             RVND(s);
+            cost_calc(s, &cost_rvnd_current);
             if(cost_rvnd_current < cost_rvnd_best){
                 sl.clear();
                 sl = s;
-                cost_calc(sl, &cost_rvnd_best);
+                cost_rvnd_best = cost_rvnd_current;
+                //cost_calc(sl, &cost_rvnd_best);
                 Iterils = 0;
             }
             perturb(sl, s);
@@ -553,16 +558,6 @@ int main(int argc, char **argv){
         Iils = dimension / 2;
     else
         Iils = dimension;
-
-    /*
-    if(dimension > 300)
-        lambda = 0.00007;
-    else if(dimension  > 200)
-        lambda = 0.01;
-    else	
-        lambda = 0.1;
-     */
-
 
     auto t1 = high_resolution_clock::now();
 
