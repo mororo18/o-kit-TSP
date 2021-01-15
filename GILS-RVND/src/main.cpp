@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cfloat>
 #include <new>
 #include <chrono>
 #include <fstream>
@@ -48,16 +49,17 @@ int dimension;
 double cost_rvnd_current;
 //double lambda;
 
-//std::chrono::_V2::system_clock::time_point t3;
-//std::chrono::_V2::system_clock::time_point t4;
+std::chrono::_V2::system_clock::time_point t3;
+std::chrono::_V2::system_clock::time_point t4;
 
+bool flag;
 int sum_t = 0;
-//long swap_t  = 0;
-//long two_opt_t  = 0;
-//long reinsertion_t  = 0;
-//long opt2_t = 0;
-//long opt3_t = 0;
-//long construct_t = 0;
+long swap_t  = 0;
+long two_opt_t  = 0;
+long reinsertion_t  = 0;
+long opt2_t = 0;
+long opt3_t = 0;
+long construct_t = 0;
 
 /*
 void cost_average_t(){
@@ -68,7 +70,7 @@ void cost_average_t(){
         for(int j = 1; j <= dimension; j++){
             if( c[i][j] == 0){
                 break;
-v           }else{
+            }else{
                 sum += c[i][j];
                 n++;
             }
@@ -82,16 +84,19 @@ void cost_average_s(int n){
     cost_sol_average = n / dimension;
 }
 */
-
 /*
+
 void after(){
+    if(!flag)
+        return;
     t3 = high_resolution_clock::now();
 }
 
-void before(){
+void before(int a){
+    if(!flag)
+        return;
     t4 = high_resolution_clock::now();
 
-    construct_t += std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
     switch(a){
         case SWAP:
             swap_t += std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
@@ -113,10 +118,10 @@ void before(){
             break;				
     }
 }
-*/
 
+*/
 bool cost_compare(const insertion_info &a, const insertion_info &b){
-    return a.cost < b.cost - std::numeric_limits<double>::epsilon();
+    return a.cost < b.cost - DBL_EPSILON;
 }
 
 void candidates_load(std::vector<int> &cand, int dim){
@@ -244,7 +249,7 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
             else
                 dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
-            if(dif < dif_lower -std::numeric_limits<double>::epsilon() || t){
+            if(dif < dif_lower - DBL_EPSILON || t){
                 dif_lower = dif;
                 cheapest.cost_dif = dif_lower;
                 cheapest.j = j;
@@ -256,7 +261,7 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
     }
     //printf("\n");
 
-    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
+    if(cheapest.cost_dif < - DBL_EPSILON)
         swap_2(s, cheapest.i, cheapest.j);
 }
 
@@ -271,7 +276,7 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
             // old distances    // new distances
             double dif = dif1 - c[s[j]][s[j+1]]  + c[s[j]][s[i-1]] + c[s[i]][s[j+1]] ;
 
-            if(dif < dif_lower || t){
+            if(dif < dif_lower - DBL_EPSILON || t){
                 dif_lower = dif;
                 cheapest.cost_dif = dif_lower;
                 cheapest.j = j;
@@ -282,7 +287,7 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
         }
     }
 
-    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
+    if(cheapest.cost_dif < - DBL_EPSILON)
         two_opt(s, cheapest.i, cheapest.j);
 }
 
@@ -322,7 +327,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
             double dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
             //std::cout << " " << dif;
 
-            if( dif < dif_lower || t){
+            if( dif < dif_lower - DBL_EPSILON || t){
                 dif_lower = dif;
                 cheapest.cost_dif = dif_lower;
                 cheapest.j = j;
@@ -334,7 +339,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
         }
     }
 
-    if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon())
+    if(cheapest.cost_dif < - DBL_EPSILON)
         reinsert(s, cheapest.i, cheapest.j, cheapest.pos_new);
 
 }
@@ -399,7 +404,7 @@ void RVND(std::vector<int> &s){
                 break;				
         }
 
-        if(cheapest.cost_dif < - std::numeric_limits<double>::epsilon()){
+        if(cheapest.cost_dif < - DBL_EPSILON){
             //s.clear();
             //s = cheapest_vec;
             //cost_calc(s, &cost_rvnd_current);
@@ -511,7 +516,7 @@ void GILS_RVND(int Imax, int Iils){
         construct(s, alpha);
         sl = s;
         int Iterils = 0;
-        //before();
+        //before(6);
 
         //printf("\t[+] Looking for the best Neighbor..\n");
         double cost_rvnd_best;
@@ -520,7 +525,7 @@ void GILS_RVND(int Imax, int Iils){
         while(Iterils < Iils){
             RVND(s);
             cost_calc(s, &cost_rvnd_current);
-            if(cost_rvnd_current < cost_rvnd_best - std::numeric_limits<double>::epsilon()){
+            if(cost_rvnd_current < cost_rvnd_best - DBL_EPSILON){
                 sl.clear();
                 sl = s;
                 cost_rvnd_best = cost_rvnd_current;
@@ -533,7 +538,7 @@ void GILS_RVND(int Imax, int Iils){
 
         double cost_sl;
         cost_calc(sl, &cost_sl);
-        if(cost_sl < cost_final - std::numeric_limits<double>::epsilon()|| i == 0){
+        if(cost_sl < cost_final - DBL_EPSILON || i == 0){
             s_final.clear();
             s_final =  s;
             cost_final = cost_sl;
@@ -549,6 +554,8 @@ void GILS_RVND(int Imax, int Iils){
 int main(int argc, char **argv){
     int Imax = 50;
     int Iils;
+
+    flag = 0;
 
     srand(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
     readData(argc, argv, &dimension, &c);
@@ -567,14 +574,14 @@ int main(int argc, char **argv){
     double res = (double)duration / 10e2;
     std::cout << "TIME: " << res << std::endl;
     //std::cout << "Lambda: " << lambda << std::endl;
-    /*
-    std::cout << "Construction time: " << construct_t/10e5 << std::endl;
-    std::cout << "Swap time: " << swap_t/10e5 << std::endl;
-    std::cout << "two_opt time: " << two_opt_t/10e5 << std::endl;
-    std::cout << "reinsertion time: " << reinsertion_t/10e5 << std::endl;
-    std::cout << "or_opt2 time: " << opt2_t/10e5 << std::endl;
-    std::cout << "or_opt3 time: " << opt3_t /10e5<< std::endl;
-    */
+    if(flag){
+        std::cout << "Construction time: " << construct_t/10e5 << std::endl;
+        std::cout << "Swap time: " << swap_t/10e5 << std::endl;
+        std::cout << "two_opt time: " << two_opt_t/10e5 << std::endl;
+        std::cout << "reinsertion time: " << reinsertion_t/10e5 << std::endl;
+        std::cout << "or_opt2 time: " << opt2_t/10e5 << std::endl;
+        std::cout << "or_opt3 time: " << opt3_t /10e5<< std::endl;
+    }
     return 0;
 }
 
