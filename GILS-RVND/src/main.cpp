@@ -29,10 +29,10 @@ struct insertion_info {
 
 struct neighbor_info{
     //std::vector<int> neighbor;
-    int pos_new;
     int i;
     int j;
     double cost_dif;
+    int pos_new;
 };
 
 struct sub_info{
@@ -295,16 +295,12 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
 inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &s, int sz){
     bool t = 1;
     double dif_lower;
-    //double loss;
-    //loss = 2*cost_total_average - cost_sol_average;
 
     for(int i = 1, j = sz + i - 1; i < (dimension+1) - sz ; ++i, ++j){
         bool l = 1;
         // subtract the old distances
         double dif1 = c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]];
 
-        //if(dif1*(-1) <= lambda*loss)
-            //continue;
         //k -> edges 
         int a = j + sz;
         for(int k = 0; k < dimension -sz - 1; ++k){
@@ -316,8 +312,8 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
             }
 
             /*
-            move the 2nd and the 3rd elements to the 6th position,
-            for example, is the same that move the 4th and the 5th 
+            moving the 2nd and the 3rd elements to the 6th position,
+            for example, is the same as moving the 4th and the 5th 
             elements to	the 2nd position.
              */
 
@@ -330,10 +326,10 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
 
             if( dif < dif_lower  || t){
                 dif_lower = dif - DBL_EPSILON;
-                cheapest.pos_new = k+1;
                 cheapest.i = i;
                 cheapest.j = j;
                 cheapest.cost_dif = dif_lower;
+                cheapest.pos_new = k+1;
                 t = 0;
 
             }
@@ -366,16 +362,11 @@ void RVND(std::vector<int> &s){
     std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
 
     while(!neighbd_list.empty()){
-        //printf("for -> while -> RVND %ld vezes ", l);
 
         int neighbd_rand_index = rand() % neighbd_list.size();
         int neighbd_rand = neighbd_list[neighbd_rand_index];
 
         struct neighbor_info cheapest;
-        //std::vector<int> cheapest_vec;
-        //cheapest_vec.reserve(dimension+1);
-        //cheapest_vec = s;
-
 
         switch(neighbd_rand){
             case SWAP:
