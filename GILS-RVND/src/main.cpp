@@ -249,11 +249,11 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
             else
                 dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
-            if(dif < dif_lower - DBL_EPSILON || t){
-                dif_lower = dif;
-                cheapest.cost_dif = dif_lower;
-                cheapest.j = j;
+            if(dif < dif_lower  || t){
+                dif_lower = dif- DBL_EPSILON;
                 cheapest.i = i;
+                cheapest.j = j;
+                cheapest.cost_dif = dif_lower;
                 t = 0;
 
             }
@@ -276,11 +276,11 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
             // old distances    // new distances
             double dif = dif1 - c[s[j]][s[j+1]]  + c[s[j]][s[i-1]] + c[s[i]][s[j+1]] ;
 
-            if(dif < dif_lower - DBL_EPSILON || t){
-                dif_lower = dif;
-                cheapest.cost_dif = dif_lower;
-                cheapest.j = j;
+            if(dif < dif_lower  || t){
+                dif_lower = dif- DBL_EPSILON;
                 cheapest.i = i;
+                cheapest.j = j;
+                cheapest.cost_dif = dif_lower;
                 t = 0;
 
             }
@@ -306,6 +306,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
         //if(dif1*(-1) <= lambda*loss)
             //continue;
         //k -> edges 
+        int a = j + sz;
         for(int k = 0; k < dimension -sz - 1; ++k){
 
 
@@ -320,19 +321,19 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
             elements to	the 2nd position.
              */
 
-            if(k == j + sz)
+            if(k == a)
                 continue;
 
             // add the new distances
             double dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
             //std::cout << " " << dif;
 
-            if( dif < dif_lower - DBL_EPSILON || t){
-                dif_lower = dif;
-                cheapest.cost_dif = dif_lower;
-                cheapest.j = j;
-                cheapest.i = i;
+            if( dif < dif_lower  || t){
+                dif_lower = dif - DBL_EPSILON;
                 cheapest.pos_new = k+1;
+                cheapest.i = i;
+                cheapest.j = j;
+                cheapest.cost_dif = dif_lower;
                 t = 0;
 
             }
@@ -448,7 +449,6 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     sub_seq2->seq.reserve(second_size);
     sub_seq2->seq.insert(sub_seq2->seq.begin(), sl.begin() + second_pos, sl.begin() + second_pos + second_size);
 
-    //int dif = 0;
     if(first_pos > second_pos){
         // elimina sub_seq1
         s.erase(s.begin() + first_pos, s.begin() + first_pos + first_size);
@@ -504,7 +504,7 @@ void GILS_RVND(int Imax, int Iils){
     s.reserve(dimension+1);
     sl.reserve(dimension+1);
     double cost_final;
-    //if(dimension > 300)
+
     for(int i = 0; i < Imax; ++i){
         int aux = rand() % 10 + 1;
         double alpha = 1.0 / aux;
@@ -547,7 +547,7 @@ void GILS_RVND(int Imax, int Iils){
         //printf("\tCurrent best cost: %d\n", cost_final);
 
     }
-    printf("COST: %lf\n", cost_final);
+    printf("COST: %.2lf\n", cost_final);
 }
 
 
