@@ -22,24 +22,24 @@ using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
 struct insertion_info {
-    int edge_removed;
-    int node_new;
     double cost;
+    short edge_removed;
+    short node_new;
 };
 
 struct neighbor_info{
     //std::vector<int> neighbor;
-    int i;
-    int j;
     double cost_dif;
-    int pos_new;
+    short i;
+    short j;
+    short pos_new;
 };
 
 struct sub_info{
     std::vector<int> seq;
-    int pos_next;
-    int prev;
-    int next;
+    short prev;
+    short next;
+    short pos_next;
 };
 
 double **c;
@@ -130,6 +130,18 @@ void candidates_load(std::vector<int> &cand, int dim){
     }
 }	
 
+inline void binary_search(std::vector<int> &vec, int node, short from, short to){
+    short middle = (from + to) / 2; 
+
+    if(vec[middle] == node){
+        vec.erase(vec.begin() + middle);
+        return;
+    }else if(vec[middle] < node){
+        binary_search(vec, node, middle+1, to);
+    }else {
+        binary_search(vec, node, from, middle);
+    }
+}
 
 void construct(std::vector<int> &s, double alpha){
 
@@ -141,7 +153,8 @@ void construct(std::vector<int> &s, double alpha){
     int subtour_inicial = 3;
 
     for(int i = subtour_inicial; --i;){
-        int node_rand_index = rand() % candidates.size();
+        const short sz = candidates.size();
+        int node_rand_index = (unsigned)rand() % sz; 
         int node_rand = candidates[node_rand_index];
 
         s.insert(s.begin() + 1, node_rand);
@@ -170,21 +183,25 @@ void construct(std::vector<int> &s, double alpha){
         //printf("valor de l  =  %d\n", l);
 
 
-        int node_rand_range = (alpha * insertion_cost.size());
-        int node_rand_index = rand() % node_rand_range;
+        const short node_rand_range = (alpha * insertion_cost.size());
+        short node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
 
-        int node_rand = insertion_cost[node_rand_index].node_new;
-        int edge = insertion_cost[node_rand_index].edge_removed;
+        short node_rand = insertion_cost[node_rand_index].node_new;
+        short edge = insertion_cost[node_rand_index].edge_removed;
         s.insert(s.begin() + edge + 1, node_rand); 
         //printf("inserted node: %d\n", node_rand);
 
+        /*
         for(int i = 0; i < candidates.size(); ++i){
             if(candidates[i] ==  node_rand){
                 candidates.erase(candidates.begin() + i);
                 break;
             }
         }
+        */
+
+        binary_search(candidates, node_rand, 0, candidates.size() );
 
     }
 
@@ -208,9 +225,9 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
         }else{
             */
             std::vector<int> copy;
-            copy.reserve(j - i + 1);
-            copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
-            vec.erase(vec.begin() + i, vec.begin() + j+1);
+            copy.reserve(j - i);
+            copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j);
+            vec.erase(vec.begin() + i, vec.begin() + j);
             vec.insert(vec.begin() + pos, copy.begin(), copy.end());
         //}
     }else{
@@ -221,10 +238,10 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
         }else{
             */
             std::vector<int> copy;
-            copy.reserve(j - i + 1);
-            copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j+1);
+            copy.reserve(j - i );
+            copy.insert(copy.begin(), vec.begin() + i, vec.begin() + j);
             vec.insert(vec.begin() + pos, copy.begin(), copy.end());
-            vec.erase(vec.begin() + i, vec.begin() + j+1);
+            vec.erase(vec.begin() + i, vec.begin() + j);
         //}
     }
 
@@ -242,18 +259,19 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
         double dif3 = dif1 - c[s[i]][s[i+1]];
         //if(dif1*(-1) <= loss)
         //continue;
+        int a = i + 1;
         for(int j = i + 1; j < dimension; ++j){
             double dif;
-            if(i + 1 != j) //consecutive nodes 
+            if(a != j ) //consecutive nodes 
                 dif = dif3 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j-1]] - c[s[j]][s[j+1]];
             else
                 dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
             if(dif < dif_lower  || t){
                 dif_lower = dif- DBL_EPSILON;
+                cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
-                cheapest.cost_dif = dif_lower;
                 t = 0;
 
             }
@@ -278,9 +296,9 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
 
             if(dif < dif_lower  || t){
                 dif_lower = dif- DBL_EPSILON;
+                cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
-                cheapest.cost_dif = dif_lower;
                 t = 0;
 
             }
@@ -303,10 +321,11 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
 
         //k -> edges 
         int a = j + sz;
+        int b = i - 1;
         for(int k = 0; k < dimension -sz - 1; ++k){
 
 
-            if(l && k >= i - 1){
+            if(l && k >= b){
                 k = k + sz + 1;
                 l = 0;
             }
@@ -317,7 +336,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
             elements to	the 2nd position.
              */
 
-            if(k == a)
+            if(k-a == 0)
                 continue;
 
             // add the new distances
@@ -326,9 +345,9 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
 
             if( dif < dif_lower  || t){
                 dif_lower = dif - DBL_EPSILON;
+                cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
-                cheapest.cost_dif = dif_lower;
                 cheapest.pos_new = k+1;
                 t = 0;
 
@@ -337,7 +356,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
     }
 
     if(cheapest.cost_dif < - DBL_EPSILON)
-        reinsert(s, cheapest.i, cheapest.j, cheapest.pos_new);
+        reinsert(s, cheapest.i, cheapest.j + 1, cheapest.pos_new);
 
 }
 
@@ -369,16 +388,6 @@ void RVND(std::vector<int> &s){
         struct neighbor_info cheapest;
 
         switch(neighbd_rand){
-            case SWAP:
-                //after();
-                neighbor_swap_better(cheapest, s);
-                //before(SWAP);
-                break;
-            case TWO_OPT:
-                //after();
-                neighbor_two_opt_better(cheapest, s);
-                //before(TWO_OPT);
-                break;				
             case REINSERTION:
                 //after();
                 neighbor_reinsertion_better(cheapest, s, REINSERTION);
@@ -393,6 +402,16 @@ void RVND(std::vector<int> &s){
                 //after();
                 neighbor_reinsertion_better(cheapest, s, OR_OPT3);
                 //before(OR_OPT3);
+                break;				
+            case SWAP:
+                //after();
+                neighbor_swap_better(cheapest, s);
+                //before(SWAP);
+                break;
+            case TWO_OPT:
+                //after();
+                neighbor_two_opt_better(cheapest, s);
+                //before(TWO_OPT);
                 break;				
         }
 
@@ -454,7 +473,7 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
 
     dimension = s.size() - 1;
     while(true){
-        int pos = rand() % dimension + 1;
+        int pos = (unsigned)rand() % dimension + 1;
         if(s[pos-1] == sub_seq1->prev || s[pos] == sub_seq1->next){
             continue;
         }else{
@@ -465,7 +484,7 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
 
     dimension = s.size() - 1;
     while(true){
-        int pos = rand() % dimension + 1;
+        int pos = (unsigned)rand() % dimension + 1;
         if(s[pos-1] == sub_seq2->prev || s[pos] == sub_seq2->next){
             continue;
         }else{
@@ -538,7 +557,7 @@ void GILS_RVND(int Imax, int Iils){
         //printf("\tCurrent best cost: %d\n", cost_final);
 
     }
-    printf("COST: %.2lf\n", cost_final);
+    std::cout << "COST: " << cost_final << std::endl;
 }
 
 
