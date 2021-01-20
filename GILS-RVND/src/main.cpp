@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdint>
 #include <cfloat>
 #include <new>
 #include <chrono>
@@ -7,8 +8,10 @@
 #include <algorithm>
 #include <vector>
 #include <time.h>
+#include <math.h>
 #include <stdlib.h>
 #include "readData.h"
+#include <sched.h>
 
 #define REINSERTION 1
 #define OR_OPT2 	2
@@ -60,6 +63,8 @@ long reinsertion_t  = 0;
 long opt2_t = 0;
 long opt3_t = 0;
 long construct_t = 0;
+long search_t; 
+long search_t_average = 0;
 
 /*
 void cost_average_t(){
@@ -84,7 +89,6 @@ void cost_average_s(int n){
     cost_sol_average = n / dimension;
 }
 */
-/*
 
 void after(){
     if(!flag)
@@ -116,10 +120,14 @@ void before(int a){
         case 6:
             construct_t += std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
             break;				
+        case 7:
+            search_t = std::chrono::duration_cast<std::chrono::microseconds>( t4 - t3 ).count();
+            search_t_average += search_t;
+            break;				
+
     }
 }
 
-*/
 bool cost_compare(const insertion_info &a, const insertion_info &b){
     return a.cost < b.cost - DBL_EPSILON;
 }
@@ -131,19 +139,20 @@ void candidates_load(std::vector<int> &cand, int dim){
 }	
 
 inline void binary_search(std::vector<int> &vec, int node, short from, short to){
-    short middle = (from + to) / 2; 
+    //short middle = (from + to) / 2; 
+    #define MIDDLE (from + to) / 2
 
-    if(vec[middle] == node){
-        vec.erase(vec.begin() + middle);
+    if(vec[MIDDLE] == node){
+        vec.erase(vec.begin() + MIDDLE);
         return;
-    }else if(vec[middle] < node){
-        binary_search(vec, node, middle+1, to);
+    }else if(vec[MIDDLE] < node){
+        binary_search(vec, node, MIDDLE + 1, to);
     }else {
-        binary_search(vec, node, from, middle);
+        binary_search(vec, node, from, MIDDLE);
     }
 }
 
-void construct(std::vector<int> &s, double alpha){
+void construct(std::vector<int> &s, const double alpha){
 
     //s.clear();
     s = {1, 1};
@@ -153,8 +162,8 @@ void construct(std::vector<int> &s, double alpha){
     int subtour_inicial = 3;
 
     for(int i = subtour_inicial; --i;){
-        const short sz = candidates.size();
-        int node_rand_index = (unsigned)rand() % sz; 
+        
+        int node_rand_index = (unsigned)rand() % candidates.size(); 
         int node_rand = candidates[node_rand_index];
 
         s.insert(s.begin() + 1, node_rand);
@@ -183,8 +192,8 @@ void construct(std::vector<int> &s, double alpha){
         //printf("valor de l  =  %d\n", l);
 
 
-        const short node_rand_range = (alpha * insertion_cost.size());
-        short node_rand_index = (unsigned)rand() % node_rand_range;
+        int node_rand_range = ceil(alpha * insertion_cost.size());
+        int node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
 
         short node_rand = insertion_cost[node_rand_index].node_new;
@@ -248,27 +257,33 @@ inline void reinsert(std::vector<int> &vec, /*struct neighbor_info &cheapest, */
 }
 
 inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int> &s){
+    double dif;
+    double dif1;
+    double dif3;
     double dif_lower;
     bool t = 1;
-    //int loss;
-    //loss = 2*cost_total_average - cost_sol_average;
 
     for(int i = 1; i < dimension - 1; ++i){
-        // subtract the old distances
-        double dif1 = - c[s[i]][s[i-1]];
-        double dif3 = dif1 - c[s[i]][s[i+1]];
-        //if(dif1*(-1) <= loss)
-        //continue;
+        int d = i - 1;
         int a = i + 1;
-        for(int j = i + 1; j < dimension; ++j){
-            double dif;
-            if(a != j ) //consecutive nodes 
-                dif = dif3 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j-1]] - c[s[j]][s[j+1]];
-            else
-                dif = dif1 + c[s[i]][s[j-1]] + c[s[i]][s[j+1]] + c[s[j]][s[i-1]] + c[s[j]][s[i+1]] - c[s[j]][s[j+1]];
 
-            if(dif < dif_lower  || t){
-                dif_lower = dif- DBL_EPSILON;
+        // subtract the old distances
+        dif1 = - c[s[i]][s[d]];
+        dif3 = dif1 - c[s[i]][s[a]];
+
+        for(int j = a; j < dimension; ++j){
+            int b = j + 1;
+            int e = j - 1;
+
+            if(a != j ) //consecutive nodes 
+                dif = dif3 + c[s[i]][s[e]] + c[s[i]][s[b]] + c[s[j]][s[d]] + c[s[j]][s[a]] - c[s[j]][s[e]] - c[s[j]][s[b]];
+            else
+                dif = dif1 + c[s[i]][s[e]] + c[s[i]][s[b]] + c[s[j]][s[d]] + c[s[j]][s[a]] - c[s[j]][s[b]];
+
+            /*if(dif >= d && !t)
+                continue;
+            else*/ if(dif < dif_lower  || t){
+                dif_lower = dif - DBL_EPSILON;
                 cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
@@ -284,18 +299,23 @@ inline void neighbor_swap_better(struct neighbor_info &cheapest, std::vector<int
 }
 
 inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<int> &s){
+    double dif;
+    double dif1;
     double dif_lower;
     bool t = 1;
 
     for(int i = 1; i < dimension - 1; ++i){
-        // old distances
-        double dif1 = - c[s[i]][s[i-1]];
+        int b = i - 1;
+        dif1 = - c[s[i]][s[b]];
         for(int j = i + 2; j < dimension; ++j){
+            int a = j + 1;
             // old distances    // new distances
-            double dif = dif1 - c[s[j]][s[j+1]]  + c[s[j]][s[i-1]] + c[s[i]][s[j+1]] ;
+            dif = dif1 - c[s[j]][s[a]]  + c[s[j]][s[b]] + c[s[i]][s[a]] ;
 
-            if(dif < dif_lower  || t){
-                dif_lower = dif- DBL_EPSILON;
+            /*if(dif >= d && !t)
+                continue;
+            else*/ if(dif < dif_lower || t){
+                dif_lower = dif - DBL_EPSILON;
                 cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
@@ -311,17 +331,20 @@ inline void neighbor_two_opt_better(struct neighbor_info &cheapest, std::vector<
 
 
 inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vector<int> &s, int sz){
-    bool t = 1;
+    double dif;
+    double dif1;
     double dif_lower;
+    bool t = 1;
 
     for(int i = 1, j = sz + i - 1; i < (dimension+1) - sz ; ++i, ++j){
+        int a = j + sz;
+        int e = j + 1;
+        int b = i - 1;
         bool l = 1;
         // subtract the old distances
-        double dif1 = c[s[i-1]][s[j+1]] - c[s[i]][s[i-1]] - c[s[j]][s[j+1]];
+        dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
 
         //k -> edges 
-        int a = j + sz;
-        int b = i - 1;
         for(int k = 0; k < dimension -sz - 1; ++k){
 
 
@@ -336,19 +359,22 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
             elements to	the 2nd position.
              */
 
-            if(k-a == 0)
+            if(k == a)
                 continue;
+            
+            int g = k + 1;
 
             // add the new distances
-            double dif = dif1 + c[s[i]][s[k]] + c[s[k+1]][s[j]] - c[s[k+1]][s[k]]; 
-            //std::cout << " " << dif;
+            dif = dif1 + c[s[i]][s[k]] + c[s[g]][s[j]] - c[s[g]][s[k]]; 
 
-            if( dif < dif_lower  || t){
+            /*if(dif >= d && !t)
+                continue;
+            else*/ if( dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
                 cheapest.cost_dif = dif_lower;
                 cheapest.i = i;
                 cheapest.j = j;
-                cheapest.pos_new = k+1;
+                cheapest.pos_new = k;
                 t = 0;
 
             }
@@ -356,7 +382,7 @@ inline void neighbor_reinsertion_better(struct neighbor_info &cheapest, std::vec
     }
 
     if(cheapest.cost_dif < - DBL_EPSILON)
-        reinsert(s, cheapest.i, cheapest.j + 1, cheapest.pos_new);
+        reinsert(s, cheapest.i, cheapest.j + 1, cheapest.pos_new + 1);
 
 }
 
@@ -382,7 +408,7 @@ void RVND(std::vector<int> &s){
 
     while(!neighbd_list.empty()){
 
-        int neighbd_rand_index = rand() % neighbd_list.size();
+        int neighbd_rand_index = (unsigned)rand() % neighbd_list.size();
         int neighbd_rand = neighbd_list[neighbd_rand_index];
 
         struct neighbor_info cheapest;
@@ -434,8 +460,8 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     s.clear();
     s = sl;
     int dimension = s.size() - 1;
-    int first_size = (rand() % (int)(dimension / 10)) + 2;
-    int first_pos = rand() % (dimension - first_size - 1) + 1;
+    int first_size = ((unsigned)rand() % (int)(dimension / 10)) + 2;
+    int first_pos = (unsigned)rand() % (dimension - first_size - 1) + 1;
 
     struct sub_info *sub_seq1 = new(std::nothrow) struct sub_info;
     sub_seq1->prev = sl[first_pos - 1];
@@ -443,11 +469,11 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     sub_seq1->seq.reserve(first_size);
     sub_seq1->seq.insert(sub_seq1->seq.begin(), sl.begin() + first_pos, sl.begin() + first_pos + first_size);
 
-    int second_size = (rand() % ((int)(dimension / 10))) + 2;
+    int second_size = ((unsigned)rand() % ((int)(dimension / 10))) + 2;
     int second_pos;
     // second_pos restrictions
     while(true){
-        int pos = rand() % (dimension - second_size - 1) + 1;
+        int pos = (unsigned)rand() % (dimension - second_size - 1) + 1;
         if((pos <( first_pos - second_size) || pos > first_pos + first_size)){
             second_pos = pos;
             break;
@@ -516,19 +542,20 @@ void GILS_RVND(int Imax, int Iils){
     double cost_final;
 
     for(int i = 0; i < Imax; ++i){
-        int aux = rand() % 10 + 1;
+        after();
+        const int a = 99;
+        int aux = (unsigned)rand() % a + 1;
         double alpha = 1.0 / aux;
-        //printf("alpha  = %lf\n", alpha);
 
-        //printf("[+] Search %d\n", i+1);
-        //printf("\t[+] Constructing..\n");	
+        printf("[+] Search %d\n", i+1);
+        printf("\t[+] Constructing..\n");	
         //after();
         construct(s, alpha);
         sl = s;
         int Iterils = 0;
         //before(6);
 
-        //printf("\t[+] Looking for the best Neighbor..\n");
+        printf("\t[+] Looking for the best Neighbor..\n");
         double cost_rvnd_best;
         cost_calc(sl, &cost_rvnd_best);
 
@@ -554,7 +581,11 @@ void GILS_RVND(int Imax, int Iils){
             cost_final = cost_sl;
         }
 
-        //printf("\tCurrent best cost: %d\n", cost_final);
+        before(7);
+
+        std::cout << "\tCurrent best cost: "<< cost_final << std::endl;
+        std::cout << "\tCurrent search time: "<< search_t / 10e5<< std::endl;
+        std::cout << "\tCurrent average search time: "<< (search_t_average / (i+1)) / 10e5 << std::endl;
 
     }
     std::cout << "COST: " << cost_final << std::endl;
@@ -564,8 +595,13 @@ void GILS_RVND(int Imax, int Iils){
 int main(int argc, char **argv){
     int Imax = 50;
     int Iils;
+    
+    cpu_set_t set;
+    CPU_ZERO(&set);        // clear cpu mask
+    CPU_SET(0, &set);      // set cpu 0
+    sched_setaffinity(0, sizeof(cpu_set_t), &set);  // 0 is the calling process
 
-    flag = 0;
+    flag = true;
 
     srand(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
     readData(argc, argv, &dimension, &c);
