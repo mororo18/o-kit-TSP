@@ -6,7 +6,7 @@ CPPC = g++
 #############################
 
 #### opcoes de compilacao e includes
-CCOPT = $(BITS_OPTION) -O3 -fPIC -fexceptions -DNDEBUG -DIL_STD -std=c++0x 
+CCOPT = $(BITS_OPTION) -O3 -fPIC -fexceptions -DNDEBUG -DIL_STD -std=c++0x
 CONCERTINCDIR = $(CONCERTDIR)/include
 #############################
 
@@ -26,7 +26,7 @@ OBJS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRCS))
 #### regra principal, gera o executavel
 tsp: $(OBJS) 
 	@echo  "\033[31m \nLinking all objects files: \033[0m"
-	$(CPPC) $(BITS_OPTION) $(OBJS) -o $@ $(CPPFLAGS) $(CCOPT) -g
+	$(CPPC) $(BITS_OPTION) $(OBJS) -o $@ $(CPPFLAGS) $(CCOPT) -g 
 ############################
 
 #inclui os arquivos de dependencias
