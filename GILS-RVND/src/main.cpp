@@ -24,10 +24,10 @@ using std::chrono::microseconds;
 using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
-struct insertion_info {
-    double cost;
-    short edge_removed;
-    short node_new;
+struct alignas(4) insertion_info {
+    float cost;
+    int edge_removed;
+    int node_new;
 };
 
 struct sub_info{
@@ -44,7 +44,7 @@ std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
 
-bool state;
+volatile bool state;
 bool flag;
 int sum_t = 0;
 long swap_t  = 0;
@@ -210,7 +210,7 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 }
 
 #define DBL_SZ 8
-#define INT_SZ 2
+#define INT_SZ 4
 
 inline void neighbor_swap_better(std::vector<int> &s){
     alignas(DBL_SZ) double dif;
@@ -231,7 +231,6 @@ inline void neighbor_swap_better(std::vector<int> &s){
         d = i - 1;
         a = i + 1;
 
-        // subtract the old distances
         dif1 = - c[s[i]][s[d]];
         dif3 = dif1 - c[s[i]][s[a]];
 
@@ -240,9 +239,9 @@ inline void neighbor_swap_better(std::vector<int> &s){
             e = j - 1;
 
             if(a != j ){ //consecutive nodes 
-                dif = dif3 + c[s[i]][s[e]] + c[s[i]][s[b]] + c[s[j]][s[d]] + c[s[j]][s[a]] - c[s[j]][s[e]] - c[s[j]][s[b]];
+                dif = ((dif3 + c[s[i]][s[e]]) + (c[s[i]][s[b]] + c[s[j]][s[d]])) + ((c[s[j]][s[a]] - c[s[j]][s[e]]) - c[s[j]][s[b]]);
             }else{
-                dif = dif1 + c[s[i]][s[e]] + c[s[i]][s[b]] + c[s[j]][s[d]] + c[s[j]][s[a]] - c[s[j]][s[b]];
+                dif = (dif1 + c[s[i]][s[e]]) + (c[s[i]][s[b]] + c[s[j]][s[d]]) + (c[s[j]][s[a]] - c[s[j]][s[b]]);
             }
 
             if(dif < dif_lower  || t){
@@ -279,7 +278,7 @@ inline void neighbor_two_opt_better(std::vector<int> &s){
         for(j = i + 2; j < dimension; ++j){
             a = j + 1;
 
-            dif = dif1 - c[s[j]][s[a]]  + c[s[j]][s[b]] + c[s[i]][s[a]] ;
+            dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][s[b]] + c[s[i]][s[a]]);
 
             if(dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
@@ -321,7 +320,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
         e = j + 1;
         b = i - 1;
         l = 1;
-        // subtract the old distances
+
         dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
 
         //k -> edges 
@@ -344,8 +343,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
             
             g = k + 1;
 
-            // add the new distances
-            dif = dif1 + c[s[i]][s[k]] + c[s[j]][s[g]] - c[s[g]][s[k]]; 
+            dif = (dif1 + c[s[i]][s[k]]) + (c[s[j]][s[g]] - c[s[g]][s[k]]); 
 
             if( dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
