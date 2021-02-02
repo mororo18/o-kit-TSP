@@ -223,33 +223,48 @@ inline void neighbor_swap_better(std::vector<int> &s){
     alignas(INT_SZ) int b;
     alignas(INT_SZ) int d;
     alignas(INT_SZ) int a;
+    alignas(INT_SZ) int o;
+    alignas(INT_SZ) int p;
+    alignas(INT_SZ) int q;
+    alignas(INT_SZ) int dim = dimension - 2;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
     alignas(1) bool t = 1;
+    alignas(1) bool l;
 
     for(i = 1; i < dimension - 1; ++i){
+        o = s[i];
         d = i - 1;
         a = i + 1;
+        q = a + 1;
+        l = false;
 
         dif1 = - c[s[i]][s[d]];
         dif3 = dif1 - c[s[i]][s[a]];
 
-        for(j = a; j < dimension; ++j){
+        //consecutive nodes
+        dif = (dif1  + c[s[i]][s[q]]) + (c[s[a]][s[d]] - c[s[a]][s[q]]);
+
+        if(dif < dif_lower || t){
+            dif_lower = dif - DBL_EPSILON;
+            i_best = i;
+            j_best = a;
+            t = 0;
+        }
+
+        if(i == dim) continue;
+
+        for(j = q; j < dimension; ++j){
+            p = s[j];
             b = j + 1;
             e = j - 1;
 
-            if(a != j ){ //consecutive nodes 
-                dif = ((dif3 + c[s[i]][s[e]]) + (c[s[i]][s[b]] + c[s[j]][s[d]])) + ((c[s[j]][s[a]] - c[s[j]][s[e]]) - c[s[j]][s[b]]);
-            }else{
-                dif = (dif1 + c[s[i]][s[e]]) + (c[s[i]][s[b]] + c[s[j]][s[d]]) + (c[s[j]][s[a]] - c[s[j]][s[b]]);
-            }
+            dif = ((dif3 + c[o][s[e]]) + (c[o][s[b]] + c[p][s[d]])) + ((c[p][s[a]] - c[p][s[e]]) - c[p][s[b]]);
 
-            if(dif < dif_lower  || t){
+            if(dif < dif_lower){
                 dif_lower = dif - DBL_EPSILON;
                 i_best = i;
                 j_best = j;
-                t = 0;
-
             }
         }
     }
@@ -273,12 +288,12 @@ inline void neighbor_two_opt_better(std::vector<int> &s){
     alignas(1) bool t = 1;
 
     for(i = 1; i < dimension - 1; ++i){
-        b = i - 1;
-        dif1 = - c[s[i]][s[b]];
+        b = s[i - 1];
+        dif1 = - c[s[i]][b];
         for(j = i + 2; j < dimension; ++j){
             a = j + 1;
 
-            dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][s[b]] + c[s[i]][s[a]]);
+            dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][b] + c[s[i]][s[a]]);
 
             if(dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
@@ -307,6 +322,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
     alignas(INT_SZ) int g;
     alignas(INT_SZ) int b;
     alignas(INT_SZ) int a;
+    alignas(INT_SZ) int o;
     alignas(INT_SZ) int e;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
@@ -316,7 +332,8 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
     alignas(1) bool t = 1;
 
     for(i = 1, j = sz + i - 1; i < dimension - sz + 1; ++i, ++j){
-        a = j + sz;
+        a = s[i];
+        o = s[j];
         e = j + 1;
         b = i - 1;
         l = 1;
@@ -324,13 +341,15 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
         dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
 
         //k -> edges 
-        for(k = 0; k < k_lim; ++k){
+        for(k = 0; k < b; ++k){
 
 
-            if(l && k >= b){
+            /*
+            if(l && k == b){
                 k = k + sz + 1;
                 l = 0;
             }
+            */
 
             /*
             moving the 2nd and the 3rd elements to the 6th position,
@@ -338,12 +357,12 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
             elements to	the 2nd position.
              */
 
-            if(k == a)
-                continue;
+            //if(k == a)
+                //continue;
             
             g = k + 1;
 
-            dif = (dif1 + c[s[i]][s[k]]) + (c[s[j]][s[g]] - c[s[g]][s[k]]); 
+            dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
 
             if( dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
@@ -352,6 +371,37 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
                 pos_new = k;
                 t = 0;
 
+            }
+        }
+
+        for(k = i + sz; k < k_lim; ++k){
+
+
+            /*
+            if(l && k == b){
+                k = k + sz + 1;
+                l = 0;
+            }
+            */
+
+            /*
+            moving the 2nd and the 3rd elements to the 6th position,
+            for example, is the same as moving the 4th and the 5th 
+            elements to	the 2nd position.
+             */
+
+            //if(k == a)
+                //continue;
+            
+            g = k + 1;
+
+            dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
+
+            if( dif < dif_lower){
+                dif_lower = dif - DBL_EPSILON;
+                i_best = i;
+                j_best = j;
+                pos_new = k;
             }
         }
     }
@@ -381,12 +431,14 @@ inline void neighbd_list_repopulate(std::vector<int> &list){
 void RVND(std::vector<int> &s){
 
     //printf("for -> while -> RVND\n");
-    std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+    alignas(8) std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+    alignas(4) int neighbd_rand_index;
+    alignas(4) int neighbd_rand;
 
     while(!neighbd_list.empty()){
 
-        int neighbd_rand_index = (unsigned)rand() % neighbd_list.size();
-        int neighbd_rand = neighbd_list[neighbd_rand_index];
+        neighbd_rand_index = (unsigned)rand() % neighbd_list.size();
+        neighbd_rand = neighbd_list[neighbd_rand_index];
 
         state = false;
 
@@ -505,9 +557,9 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
 
 void GILS_RVND(int Imax, int Iils){
 
-    std::vector<int> s;
-    std::vector<int> sl;
-    std::vector<int> s_final;
+    alignas(alignof(std::vector<int>)) std::vector<int> s;
+    alignas(alignof(std::vector<int>)) std::vector<int> sl;
+    alignas(alignof(std::vector<int>)) std::vector<int> s_final;
     sl.reserve(dimension+1);
     s.reserve(dimension+1);
     s_final.reserve(dimension+1);
@@ -533,14 +585,15 @@ void GILS_RVND(int Imax, int Iils){
 
         printf("\t[+] Looking for the best Neighbor..\n");
         cost_calc(sl, &cost_rvnd_best);
+        cost_rvnd_best -= DBL_EPSILON;
 
         while(Iterils < Iils){
             RVND(s);
             cost_calc(s, &cost_rvnd_current);
-            if(cost_rvnd_current < cost_rvnd_best - DBL_EPSILON){
+            if(cost_rvnd_current < cost_rvnd_best){
                 sl.clear();
                 sl = s;
-                cost_rvnd_best = cost_rvnd_current;
+                cost_rvnd_best = cost_rvnd_current - DBL_EPSILON;
                 //cost_calc(sl, &cost_rvnd_best);
                 Iterils = 0;
             }
