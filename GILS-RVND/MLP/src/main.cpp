@@ -11,7 +11,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include "readData.h"
-#include <sched.h>
 
 #define REINSERTION 1
 #define OR_OPT2 	2
@@ -25,9 +24,15 @@ using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
 struct alignas(4) insertion_info {
-    float cost;
+    double cost;
     int edge_removed;
     int node_new;
+};
+
+struct alignas(alignof(double)) subseq {
+    double T;
+    double C;
+    double W;
 };
 
 struct sub_info{
@@ -44,7 +49,7 @@ std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
 
-volatile bool state;
+bool state;
 bool flag;
 int sum_t = 0;
 long swap_t  = 0;
@@ -125,8 +130,10 @@ void construct(std::vector<int> &s, const double alpha){
     std::vector<int> candidates;
     candidates.reserve(dimension);
     candidates_load(candidates, dimension);
+
     int subtour_inicial = 3;
 
+    /*
     for(int i = subtour_inicial; --i;){
         
         int node_rand_index = (unsigned)rand() % candidates.size(); 
@@ -135,25 +142,20 @@ void construct(std::vector<int> &s, const double alpha){
         s.insert(s.begin() + 1, node_rand);
         candidates.erase(candidates.begin() + node_rand_index);
     }
+    */
 
+    int r = 1;
 
     while(!candidates.empty()){
 
-        int dim = s.size() - 1;
+        //int dim = s.size() - 1;
 
-        int insertion_possiblts = (dim * candidates.size());
-        std::vector<struct insertion_info> insertion_cost (insertion_possiblts);
+        //int insertion_possiblts = (dim * candidates.size());
+        std::vector<struct insertion_info> insertion_cost (candidates.size());
 
-        for(int i = 0, j = 1, l = 0; i < dim; ++i, ++j){   
-            double a = c[s[i]][s[j]];
-            for(auto k : candidates){
-
-                insertion_cost[l].cost = c[s[i]][k] - a + c[s[j]][k] ;  
-                insertion_cost[l].node_new = k;
-                insertion_cost[l].edge_removed = i; 
-                ++l;
-
-            }
+        for(int i = 0; i < candidates.size(); ++i){   
+            insertion_cost[i].cost = c[r][candidates[i]];  
+            insertion_cost[i].node_new = candidates[i];
         }
         //printf("valor de l  =  %d\n", l);
 
@@ -162,9 +164,9 @@ void construct(std::vector<int> &s, const double alpha){
         int node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
 
-        short node_rand = insertion_cost[node_rand_index].node_new;
-        short edge = insertion_cost[node_rand_index].edge_removed;
-        s.insert(s.begin() + edge + 1, node_rand); 
+        int node_rand = insertion_cost[node_rand_index].node_new;
+        s.insert(s.end() - 1, node_rand); 
+        r = node_rand;
         //printf("inserted node: %d\n", node_rand);
 
         /*
@@ -179,6 +181,15 @@ void construct(std::vector<int> &s, const double alpha){
         binary_search(candidates, node_rand, 0, candidates.size() );
 
     }
+
+    /*  
+    for(int i = 0; i< s.size(); i++)
+        std::cout << s[i] << " ";
+
+    std::cout << std::endl;
+    */
+
+    //exit(-1);
 
 }	
 
@@ -422,6 +433,7 @@ inline void cost_calc(std::vector<int> &s, double *cost_best){
     *cost_best = sum;
 }
 
+
 inline void neighbd_list_repopulate(std::vector<int> &list){
     list.clear();
     list = {1, 2, 3, 4, 5};
@@ -555,14 +567,74 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     delete sub_seq2;
 }
 
+inline double time_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = from; i < to - 1; ++i)
+        sum += c[s[i]][s[i+1]];
+
+    return sum;
+}
+
+inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = to; i > from - 1; --i)
+        for(int j = from; j < i; j++)
+            sum += c[s[j]][s[j+1]];
+        
+
+    return sum;
+}
+
+void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
+    
+    std::cout << "cost_1: " << std::endl;
+    for(int i = 0; i < dimension-2; i++){
+        for(int j = i+2; j < dimension; j++){
+            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
+            seq[s[i]][s[j]].C = cost_acumulated_calc(s, i+1, j-1);
+            std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[s[i]][s[j]].W = j - i - 1;
+
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "cost_2: " << std::endl;
+    for(int i = 0; i < dimension-2; i++){
+        for(int j = i+2; j < dimension; j++){
+            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
+            seq[s[i]][s[j]].C = time_calc(s, i+1, j) + seq[s[i]][s[j-1]].C;
+            std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[s[i]][s[j]].W = j - i - 1;
+
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "cost_3: " << std::endl;
+    for(int i = 0; i < dimension-2; i++){
+        for(int j = i+2; j < dimension; j++){
+            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
+            seq[s[i]][s[j]].C = c[s[j-1]][s[j-2]]*(j!=i+2) + seq[s[i]][s[j-1]].T + seq[s[i]][s[j-1]].C;
+            std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[s[i]][s[j]].W = j - i - 1;
+
+        }
+        std::cout << std::endl;
+    }
+
+}
+
 void GILS_RVND(int Imax, int Iils){
 
     alignas(alignof(std::vector<int>)) std::vector<int> s;
     alignas(alignof(std::vector<int>)) std::vector<int> sl;
     alignas(alignof(std::vector<int>)) std::vector<int> s_final;
+    alignas(alignof(std::vector<std::vector<struct subseq>>)) std::vector<std::vector<struct subseq>> subseq_info (dimension+1, std::vector<struct subseq>(dimension+1)) ;
     sl.reserve(dimension+1);
     s.reserve(dimension+1);
     s_final.reserve(dimension+1);
+    //subseq_info.reserve(dimension+1);
     double cost_rvnd_current;
     double cost_rvnd_best;
     double cost_sl;
@@ -578,7 +650,26 @@ void GILS_RVND(int Imax, int Iils){
         printf("[+] Search %d\n", i+1);
         printf("\t[+] Constructing..\n");	
         //after();
-        construct(s, alpha);
+        //construct(s, alpha);
+        s= {1};
+        candidates_load(s, dimension);
+        s.push_back(1);
+
+        /*
+        double abc;
+        cost_calc(s, &abc);
+        std::cout << "cost_calc: " << abc << std::endl;
+
+        std::cout << "time_calc: " << time_calc(s, 0, dimension+1 ) << std::endl;
+        std::cout << "cost_acumulated_calc: " << c[s[0]][s[1]] + c[s[0]][s[1]] + c[s[1]][s[2]] +  c[s[0]][s[1]] + c[s[1]][s[2]] + c[s[2]][s[3]]<< std::endl;
+        std::cout << "cost_acumulated_calc: " << cost_acumulated_calc(s, 0, 3 ) << std::endl;
+
+        */
+        load_subseq_info(subseq_info, s);
+        std::cout << 2*c[s[1]][s[2]] + c[s[2]][s[3]]<< std::endl;
+        
+        exit(-1);
+
         sl = s;
         int Iterils = 0;
         //before(6);
