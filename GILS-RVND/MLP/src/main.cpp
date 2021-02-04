@@ -569,7 +569,7 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
 
 inline double time_calc(std::vector<int> &s, int from, int to){
     double sum = 0;
-    for(int i = from; i < to - 1; ++i)
+    for(int i = from; i < to; ++i)
         sum += c[s[i]][s[i+1]];
 
     return sum;
@@ -588,36 +588,49 @@ inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
 void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
     
     std::cout << "cost_1: " << std::endl;
-    for(int i = 0; i < dimension-2; i++){
-        for(int j = i+2; j < dimension; j++){
-            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
-            seq[s[i]][s[j]].C = cost_acumulated_calc(s, i+1, j-1);
+    for(int i = 0; i < dimension; i++){
+        for(int j = i; j < dimension; j++){
+            seq[s[i]][s[j]].T = time_calc(s, i, j);
+            seq[s[i]][s[j]].C = cost_acumulated_calc(s, i, j);
             std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i - 1;
+            seq[s[i]][s[j]].W = j - i + 1;
+
+            seq[s[j]][s[i]].C = seq[s[i]][s[j]].C;
+            seq[s[j]][s[i]].T = seq[s[i]][s[j]].T;
+            seq[s[j]][s[i]].W = seq[s[i]][s[j]].W;
 
         }
         std::cout << std::endl;
     }
+    /*
+    for(int i = 0; i < dimension; i++){
+        for(int j = 0; j < dimension; j++){
+            std::cout << seq[s[i]][s[j]].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+    */
 
     std::cout << "cost_2: " << std::endl;
-    for(int i = 0; i < dimension-2; i++){
-        for(int j = i+2; j < dimension; j++){
-            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
-            seq[s[i]][s[j]].C = time_calc(s, i+1, j) + seq[s[i]][s[j-1]].C;
+    for(int i = 0; i < dimension; i++){
+        for(int j = i; j < dimension; j++){
+            seq[s[i]][s[j]].T = time_calc(s, i, j);
+            seq[s[i]][s[j]].C = time_calc(s, i, j) + seq[s[i]][s[j-1]].C*(j!=i);
             std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i - 1;
+            seq[s[i]][s[j]].W = j - i + 1;
 
         }
         std::cout << std::endl;
     }
 
     std::cout << "cost_3: " << std::endl;
-    for(int i = 0; i < dimension-2; i++){
-        for(int j = i+2; j < dimension; j++){
-            seq[s[i]][s[j]].T = time_calc(s, i+1, j-1);
-            seq[s[i]][s[j]].C = c[s[j-1]][s[j-2]]*(j!=i+2) + seq[s[i]][s[j-1]].T + seq[s[i]][s[j-1]].C;
+    for(int i = 0; i < dimension; i++){
+        for(int j = i; j < dimension; j++){
+            seq[s[i]][s[j]].T = (c[s[j-1]][s[j]] + seq[s[i]][s[j-1]].T)*(j!=i);
+            seq[s[i]][s[j]].C = seq[s[i]][s[j]].T + seq[s[i]][s[j-1]].C*(j!=i);
             std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i - 1;
+            seq[s[i]][s[j]].W = j - i + 1;
 
         }
         std::cout << std::endl;
@@ -666,7 +679,6 @@ void GILS_RVND(int Imax, int Iils){
 
         */
         load_subseq_info(subseq_info, s);
-        std::cout << 2*c[s[1]][s[2]] + c[s[2]][s[3]]<< std::endl;
         
         exit(-1);
 
