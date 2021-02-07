@@ -29,10 +29,10 @@ struct alignas(4) insertion_info {
     int node_new;
 };
 
-struct alignas(alignof(double)) subseq {
+struct alignas(alignof(int)) subseq {
     double T;
     double C;
-    double W;
+    int W;
 };
 
 struct sub_info{
@@ -199,6 +199,7 @@ inline void swap_2(std::vector<int> &vec, int i, int j){
 
 inline void two_opt(std::vector<int> &vec, int i, int j){
     std::reverse(vec.begin() + i, vec.begin() + j+1);
+    //std::cout << "yas\n";
 }
 
 inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
@@ -223,7 +224,15 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 #define DBL_SZ 8
 #define INT_SZ 4
 
-inline void neighbor_swap_better(std::vector<int> &s){
+inline double cost_reverse_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = from; i < to; ++i)
+        for(int j = i; j < to; j++)
+            sum += c[s[j]][s[j+1]]; 
+    return sum;
+}
+
+inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
     alignas(DBL_SZ) double dif;
     alignas(DBL_SZ) double dif1;
     alignas(DBL_SZ) double dif3;
@@ -244,17 +253,19 @@ inline void neighbor_swap_better(std::vector<int> &s){
     alignas(1) bool l;
 
     for(i = 1; i < dimension - 1; ++i){
-        o = s[i];
+        //o = s[i];
         d = i - 1;
         a = i + 1;
         q = a + 1;
         l = false;
 
-        dif1 = - c[s[i]][s[d]];
-        dif3 = dif1 - c[s[i]][s[a]];
+        //dif1 = - c[s[i]][s[d]];
+        //dif3 = dif1 - c[s[i]][s[a]];
 
         //consecutive nodes
-        dif = (dif1  + c[s[i]][s[q]]) + (c[s[a]][s[d]] - c[s[a]][s[q]]);
+        //dif = (dif1  + c[s[i]][s[q]]) + (c[s[a]][s[d]] - c[s[a]][s[q]]);
+        dif = seq[0][i-1].C + seq[a][i].W * (seq[0][i-1].T + c[s[i-1]][s[a]]) +  c[s[a]][s[i]];
+        dif = dif + seq[a+1][dimension].W * (seq[0][i-1].T + c[s[i-1]][s[a]] + seq[a][i].T  + c[s[i]][s[a+1]] ) +  seq[a+1][dimension].C;
 
         if(dif < dif_lower || t){
             dif_lower = dif - DBL_EPSILON;
@@ -270,7 +281,10 @@ inline void neighbor_swap_better(std::vector<int> &s){
             b = j + 1;
             e = j - 1;
 
-            dif = ((dif3 + c[o][s[e]]) + (c[o][s[b]] + c[p][s[d]])) + ((c[p][s[a]] - c[p][s[e]]) - c[p][s[b]]);
+            dif = seq[0][i-1].C + seq[j][j].W * (seq[0][i-1].T + c[s[i-1]][s[j]]) +  c[s[j]][s[j]];
+            dif = dif + seq[i+1][j-1].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] ) +  seq[i+1][j-1].C;
+            dif = dif + seq[i][i].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] + seq[i+1][j-1].T+ c[s[j-1]][s[i]]) + seq[i][i].C;
+            dif = dif + seq[j+1][dimension].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] + seq[i+1][j-1].T+ c[s[j-1]][s[i]] + seq[i][i].T + c[s[i]][s[j+1]]) + seq[j+1][dimension].C;
 
             if(dif < dif_lower){
                 dif_lower = dif - DBL_EPSILON;
@@ -280,13 +294,19 @@ inline void neighbor_swap_better(std::vector<int> &s){
         }
     }
 
-    if(dif_lower < - DBL_EPSILON){
+    if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         swap_2(s, i_best, j_best);
+        /*
+        std::cout << dif_lower << std::endl;
+        std::cout << seq[0][dimension].C << std::endl;
+
+        std::cout  << std::endl;
+        */
         state = true;
     }
 }
 
-inline void neighbor_two_opt_better(std::vector<int> &s){
+inline void neighbor_two_opt_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
     alignas(DBL_SZ) double dif;
     alignas(DBL_SZ) double dif1;
     alignas(DBL_SZ) double dif_lower;
@@ -299,12 +319,17 @@ inline void neighbor_two_opt_better(std::vector<int> &s){
     alignas(1) bool t = 1;
 
     for(i = 1; i < dimension - 1; ++i){
-        b = s[i - 1];
-        dif1 = - c[s[i]][b];
+        //b = s[i - 1];
+        //dif1 = - c[s[i]][b];
         for(j = i + 2; j < dimension; ++j){
-            a = j + 1;
+            //a = j + 1;
+            a = cost_reverse_calc(s, i, j);
 
-            dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][b] + c[s[i]][s[a]]);
+            //dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][b] + c[s[i]][s[a]]);
+            dif = seq[0][i-1].C + seq[j][i].W * (seq[0][i-1].T + c[s[j]][s[i-1]]) +  a;
+            dif = dif + seq[j+1][dimension].W * (seq[0][i-1].T + c[s[j]][s[i-1]] + seq[i][j].T  + c[s[j+1]][s[i]] ) +  seq[j+1][dimension].C;
+            //std::cout << dif << std::endl;
+            
 
             if(dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
@@ -316,14 +341,23 @@ inline void neighbor_two_opt_better(std::vector<int> &s){
         }
     }
 
-    if(dif_lower < - DBL_EPSILON){
+    if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         two_opt(s, i_best, j_best);
+        /*
+        std::cout << dif_lower << std::endl;
+        std::cout << seq[0][dimension].C << std::endl;
+        std::cout << i_best << std::endl;
+        std::cout << j_best << std::endl;
+        for(int i = 0; i< dimension+1; i++)
+            std::cout << s[i] << " ";
+        std::cout  << std::endl;
+        */
         state = true;
     }
 }
 
 
-inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
+inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq, int sz){
     alignas(DBL_SZ) double dif;
     alignas(DBL_SZ) double dif1;
     alignas(DBL_SZ) double dif_lower;
@@ -343,13 +377,13 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
     alignas(1) bool t = 1;
 
     for(i = 1, j = sz + i - 1; i < dimension - sz + 1; ++i, ++j){
-        a = s[i];
-        o = s[j];
-        e = j + 1;
+        //a = s[i];
+        //o = s[j];
+        //e = j + 1;
         b = i - 1;
         l = 1;
 
-        dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
+        //dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
 
         //k -> edges 
         for(k = 0; k < b; ++k){
@@ -371,9 +405,11 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
             //if(k == a)
                 //continue;
             
-            g = k + 1;
+            //g = k + 1;
 
-            dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
+            dif = seq[0][k].C + seq[i][j].W*(seq[0][k].T + c[s[k]][s[i]]) + seq[i][j].C; 
+            dif = dif + seq[k+1][i-1].W*(seq[0][k].T + c[s[k]][s[i]] + seq[i][j].T + c[s[j]][s[k+1]]) + seq[k+1][i-1].C;
+            dif = dif + seq[j+1][dimension].W*(seq[0][k].T + c[s[k]][s[i]] + seq[i][j].T + c[s[j]][s[k+1]] + seq[k+1][i-1].T + c[s[i-1]][s[j+1]]) + seq[j+1][dimension].C;
 
             if( dif < dif_lower || t){
                 dif_lower = dif - DBL_EPSILON;
@@ -404,9 +440,13 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
             //if(k == a)
                 //continue;
             
-            g = k + 1;
+            //g = k + 1;
 
-            dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
+            //dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
+
+            dif = seq[0][i-1].C + seq[j+1][k].W*(seq[0][i-1].T + c[s[i-1]][s[j+1]]) + seq[j+1][k].C; 
+            dif = dif + seq[i][j].W*(seq[0][i-1].T + c[s[i-1]][s[j+1]] + seq[j+1][k].T + c[s[k]][s[i]]) + seq[i][j].C;
+            dif = dif + seq[k+1][dimension].W*(seq[0][i-1].T + c[s[i-1]][s[j+1]] + seq[j+1][k].T + c[s[k]][s[i]] + seq[i][j].T + c[s[j]][s[k+1]]) + seq[k+1][dimension].C;
 
             if( dif < dif_lower){
                 dif_lower = dif - DBL_EPSILON;
@@ -417,7 +457,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
         }
     }
 
-    if(dif_lower < - DBL_EPSILON){
+    if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         reinsert(s, i_best, j_best + 1, pos_new + 1);
         state = true;
     }
@@ -433,17 +473,100 @@ inline void cost_calc(std::vector<int> &s, double *cost_best){
     *cost_best = sum;
 }
 
+inline double time_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = from; i < to; ++i)
+        sum += c[s[i]][s[i+1]];
+
+    return sum;
+}
+
+inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = to; i >= from; --i)
+        for(int j = from; j < i; j++)
+            sum += c[s[j]][s[j+1]];
+        
+
+    return sum;
+}
+
+inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
+    
+    //std::cout << "cost_1: " << std::endl;
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = cost_acumulated_calc(s, i, j);
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+            //std::cout << seq[s[i]][s[j]].W << " " ;
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+
+        }
+        //std::cout << std::endl;
+    }
+    //std::cout << seq[0][dimension].C << "\n" ;
+    for(int i = 0; i < dimension; i++){
+        for(int j = 0; j < dimension; j++){
+            std::cout << seq[s[i]][s[j]].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+
+    //std::cout << "cost_2: " << std::endl;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = time_calc(s, i, j) + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+
+        }
+        //std::cout << std::endl;
+    }
+
+*/
+    //std::cout << "cost_3: " << std::endl;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = (c[s[j-1]][s[j]] + seq[i][j-1].T)*(j!=i);
+            seq[i][j].C = seq[i][j].T + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) ;//- (j == dimension);
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+        }
+        //std::cout << std::endl;
+    }
+
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = 0; j < dimension+1; j++){
+            std::cout << seq[i][j].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+    */
+}
 
 inline void neighbd_list_repopulate(std::vector<int> &list){
     list.clear();
-    list = {1, 2, 3, 4, 5};
+    list = {1,2,3,4,5};
     //printf("REPOPULATE\n");
 }
 
-void RVND(std::vector<int> &s){
+void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
 
     //printf("for -> while -> RVND\n");
-    alignas(8) std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+    alignas(8) std::vector<int> neighbd_list = {1,2,3,4,5};
     alignas(4) int neighbd_rand_index;
     alignas(4) int neighbd_rand;
 
@@ -457,34 +580,35 @@ void RVND(std::vector<int> &s){
         switch(neighbd_rand){
             case REINSERTION:
                 //after();
-                neighbor_reinsertion_better(s, REINSERTION);
+                neighbor_reinsertion_better(s, seq, REINSERTION);
                 //before(REINSERTION);
                 break;				
             case OR_OPT2:
                 //after();
-                neighbor_reinsertion_better(s, OR_OPT2);
+                neighbor_reinsertion_better(s, seq, OR_OPT2);
                 //before(OR_OPT2);
                 break;				
             case OR_OPT3:
                 //after();
-                neighbor_reinsertion_better(s, OR_OPT3);
+                neighbor_reinsertion_better(s, seq, OR_OPT3);
                 //before(OR_OPT3);
                 break;				
             case SWAP:
                 //after();
-                neighbor_swap_better(s);
+                neighbor_swap_better(s, seq);
                 //before(SWAP);
                 break;
             case TWO_OPT:
                 //after();
-                neighbor_two_opt_better(s);
+                neighbor_two_opt_better(s, seq);
                 //before(TWO_OPT);
                 break;				
         }
 
-        if(state)
+        if(state){
             neighbd_list_repopulate(neighbd_list);
-        else
+            load_subseq_info(seq, s);
+        }else
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
         
 
@@ -567,76 +691,6 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     delete sub_seq2;
 }
 
-inline double time_calc(std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = from; i < to; ++i)
-        sum += c[s[i]][s[i+1]];
-
-    return sum;
-}
-
-inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = to; i > from - 1; --i)
-        for(int j = from; j < i; j++)
-            sum += c[s[j]][s[j+1]];
-        
-
-    return sum;
-}
-
-void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
-    
-    std::cout << "cost_1: " << std::endl;
-    for(int i = 0; i < dimension; i++){
-        for(int j = i; j < dimension; j++){
-            seq[s[i]][s[j]].T = time_calc(s, i, j);
-            seq[s[i]][s[j]].C = cost_acumulated_calc(s, i, j);
-            std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i + 1;
-
-            seq[s[j]][s[i]].C = seq[s[i]][s[j]].C;
-            seq[s[j]][s[i]].T = seq[s[i]][s[j]].T;
-            seq[s[j]][s[i]].W = seq[s[i]][s[j]].W;
-
-        }
-        std::cout << std::endl;
-    }
-    /*
-    for(int i = 0; i < dimension; i++){
-        for(int j = 0; j < dimension; j++){
-            std::cout << seq[s[i]][s[j]].C << " " ;
-
-        }
-        std::cout << std::endl;
-    }
-    */
-
-    std::cout << "cost_2: " << std::endl;
-    for(int i = 0; i < dimension; i++){
-        for(int j = i; j < dimension; j++){
-            seq[s[i]][s[j]].T = time_calc(s, i, j);
-            seq[s[i]][s[j]].C = time_calc(s, i, j) + seq[s[i]][s[j-1]].C*(j!=i);
-            std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i + 1;
-
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << "cost_3: " << std::endl;
-    for(int i = 0; i < dimension; i++){
-        for(int j = i; j < dimension; j++){
-            seq[s[i]][s[j]].T = (c[s[j-1]][s[j]] + seq[s[i]][s[j-1]].T)*(j!=i);
-            seq[s[i]][s[j]].C = seq[s[i]][s[j]].T + seq[s[i]][s[j-1]].C*(j!=i);
-            std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[s[i]][s[j]].W = j - i + 1;
-
-        }
-        std::cout << std::endl;
-    }
-
-}
 
 void GILS_RVND(int Imax, int Iils){
 
@@ -663,48 +717,70 @@ void GILS_RVND(int Imax, int Iils){
         printf("[+] Search %d\n", i+1);
         printf("\t[+] Constructing..\n");	
         //after();
-        //construct(s, alpha);
+        construct(s, alpha);
+        /*
         s= {1};
         candidates_load(s, dimension);
         s.push_back(1);
+         */
 
-        /*
-        double abc;
-        cost_calc(s, &abc);
-        std::cout << "cost_calc: " << abc << std::endl;
-
-        std::cout << "time_calc: " << time_calc(s, 0, dimension+1 ) << std::endl;
-        std::cout << "cost_acumulated_calc: " << c[s[0]][s[1]] + c[s[0]][s[1]] + c[s[1]][s[2]] +  c[s[0]][s[1]] + c[s[1]][s[2]] + c[s[2]][s[3]]<< std::endl;
-        std::cout << "cost_acumulated_calc: " << cost_acumulated_calc(s, 0, 3 ) << std::endl;
-
-        */
         load_subseq_info(subseq_info, s);
         
-        exit(-1);
+        // inserir de 7 a 12(12+1) no 5 (5+1)(burma14)
+
+        /*
+        double dif;
+        int j = 12;
+        int it = 7;
+
+        dif = subseq_info[0][it-1].C + subseq_info[j][j].W * (subseq_info[0][it-1].T + c[s[it-1]][s[j]]) +  c[s[j]][s[j]];
+        dif = dif + subseq_info[it+1][j-1].W * (subseq_info[0][it-1].T + c[s[it-1]][s[j]] + subseq_info[j][j].T  + c[s[j]][s[it+1]] ) +  subseq_info[it+1][j-1].C;
+        dif = dif + subseq_info[it][it].W * (subseq_info[0][it-1].T + c[s[it-1]][s[j]] + subseq_info[j][j].T  + c[s[j]][s[it+1]] + subseq_info[it+1][j-1].T+ c[s[j-1]][s[it]]) + subseq_info[it][it].C;
+        dif = dif + subseq_info[j+1][dimension].W * (subseq_info[0][it-1].T + c[s[it-1]][s[j]] + subseq_info[j][j].T  + c[s[j]][s[it+1]] + subseq_info[it+1][j-1].T + c[s[j-1]][s[it]] + subseq_info[it][it].T + c[s[it]][s[j+1]]) + subseq_info[j+1][dimension].C;
+
+        std::cout << "manual : " << dif << std::endl;
+
+
+        swap_2(s, 7, 12);
+        load_subseq_info(subseq_info, s);
+
+        std::cout << "pos : " << subseq_info[0][dimension].C << std::endl;
+        std::cout << "pos : " << cost_acumulated_calc(s, 0, dimension) << std::endl;
+        exit(1);
+         */
 
         sl = s;
         int Iterils = 0;
         //before(6);
 
         printf("\t[+] Looking for the best Neighbor..\n");
-        cost_calc(sl, &cost_rvnd_best);
-        cost_rvnd_best -= DBL_EPSILON;
+        //cost_calc(sl, &cost_rvnd_best);
+        cost_rvnd_best = subseq_info[0][dimension].C - DBL_EPSILON;
+        //std::cout << cost_rvnd_best << std::endl;
+        //std::cout << cost_acumulated_calc(s, 0, dimension) << std::endl;
 
         while(Iterils < Iils){
-            RVND(s);
-            cost_calc(s, &cost_rvnd_current);
+            RVND(s, subseq_info);
+            load_subseq_info(subseq_info, s);
+            cost_rvnd_current = subseq_info[0][dimension].C - DBL_EPSILON;
+            //cost_calc(s, &cost_rvnd_current);
             if(cost_rvnd_current < cost_rvnd_best){
                 sl.clear();
                 sl = s;
                 cost_rvnd_best = cost_rvnd_current - DBL_EPSILON;
+                //std::cout << cost_rvnd_best << std::endl;
                 //cost_calc(sl, &cost_rvnd_best);
                 Iterils = 0;
             }
             perturb(sl, s);
+            load_subseq_info(subseq_info, s);
             Iterils++;
+            //printf("aqui\n");
         }
 
-        cost_calc(sl, &cost_sl);
+        //cost_calc(sl, &cost_sl);
+        load_subseq_info(subseq_info, sl);
+        cost_sl = subseq_info[0][dimension].C - DBL_EPSILON;
         if(cost_sl < cost_final - DBL_EPSILON || i == 0){
             s_final.clear();
             s_final =  s;
