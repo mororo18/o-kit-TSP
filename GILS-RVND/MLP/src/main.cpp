@@ -11,6 +11,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "readData.h"
+#include <cassert>
 
 #define REINSERTION 1
 #define OR_OPT2 	2
@@ -60,6 +61,16 @@ long opt3_t = 0;
 long construct_t = 0;
 long search_t; 
 long search_t_average = 0;
+
+#define TABLE_SZ 26
+
+double R_table(int i){
+    static const double table[] = {0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 
+                                    0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25};
+    //assert((unsigned) i >= (unsigned) TABLE_SZ);
+
+    return table[i];
+}
 
 void after(){
     if(!flag)
@@ -160,7 +171,7 @@ void construct(std::vector<int> &s, const double alpha){
         //printf("valor de l  =  %d\n", l);
 
 
-        int node_rand_range = ceil(alpha * insertion_cost.size());
+        int node_rand_range = alpha * insertion_cost.size() + 1;
         int node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
 
@@ -221,8 +232,170 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 
 }
 
+inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
+    
+    //std::cout << "cost_1: " << std::endl;
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = cost_acumulated_calc(s, i, j);
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+            //std::cout << seq[s[i]][s[j]].W << " " ;
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+
+        }
+        //std::cout << std::endl;
+    }
+    //std::cout << seq[0][dimension].C << "\n" ;
+    for(int i = 0; i < dimension; i++){
+        for(int j = 0; j < dimension; j++){
+            std::cout << seq[s[i]][s[j]].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+
+    //std::cout << "cost_2: " << std::endl;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = time_calc(s, i, j) + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+
+        }
+        //std::cout << std::endl;
+    }
+
+*/
+    //std::cout << "cost_3: " << std::endl;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = (c[s[j-1]][s[j]] + seq[i][j-1].T)*(j!=i);
+            seq[i][j].C = seq[i][j].T + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) ;//- (j == dimension);
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+        }
+        //std::cout << std::endl;
+    }
+
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = 0; j < dimension+1; j++){
+            std::cout << seq[i][j].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    */
+}
+inline void load_subseq_info2(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int i = 0){
+    
+    //std::cout << "cost_1: " << std::endl;
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = cost_acumulated_calc(s, i, j);
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+            //std::cout << seq[s[i]][s[j]].W << " " ;
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+
+        }
+        //std::cout << std::endl;
+    }
+    //std::cout << seq[0][dimension].C << "\n" ;
+    for(int i = 0; i < dimension; i++){
+        for(int j = 0; j < dimension; j++){
+            std::cout << seq[s[i]][s[j]].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+
+    //std::cout << "cost_2: " << std::endl;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = i; j < dimension+1; j++){
+            seq[i][j].T = time_calc(s, i, j);
+            seq[i][j].C = time_calc(s, i, j) + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
+
+        }
+        //std::cout << std::endl;
+    }
+
+*/
+    //std::cout << "cost_3: " << std::endl;
+    int from = i;
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = (i>=from?from++:from); j < dimension+1; j++){
+            seq[i][j].T = (c[s[j-1]][s[j]] + seq[i][j-1].T)*(j!=i);
+            seq[i][j].C = seq[i][j].T + seq[i][j-1].C*(j!=i);
+            //std::cout << seq[s[i]][s[j]].C << " " ;
+            seq[i][j].W = j - i + 1 -(!i) ;//- (j == dimension);
+
+            seq[j][i].C = seq[i][j].C;
+            seq[j][i].T = seq[i][j].T;
+            seq[j][i].W = seq[i][j].W;
+        }
+        //std::cout << std::endl;
+    }
+
+    /*
+    for(int i = 0; i < dimension+1; i++){
+        for(int j = 0; j < dimension+1; j++){
+            std::cout << seq[i][j].C << " " ;
+
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    */
+}
+
+
 #define DBL_SZ 8
 #define INT_SZ 4
+
+inline void cost_calc(std::vector<int> &s, double *cost_best){
+    *cost_best = 0;
+    double sum = 0;
+    for(unsigned i = 0; i < (unsigned)dimension; ++i)
+        sum += c[s[i]][s[i+1]];
+
+    *cost_best = sum;
+}
+
+inline double time_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = from; i < to; ++i)
+        sum += c[s[i]][s[i+1]];
+
+    return sum;
+}
+
+inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
+    double sum = 0;
+    for(int i = to; i >= from; --i)
+        for(int j = from; j < i; j++)
+            sum += c[s[j]][s[j+1]];
+        
+
+    return sum;
+}
 
 inline double cost_reverse_calc(std::vector<int> &s, int from, int to){
     double sum = 0;
@@ -296,6 +469,7 @@ inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<st
 
     if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         swap_2(s, i_best, j_best);
+        load_subseq_info2(seq, s, i_best);
         /*
         std::cout << dif_lower << std::endl;
         std::cout << seq[0][dimension].C << std::endl;
@@ -343,6 +517,7 @@ inline void neighbor_two_opt_better(std::vector<int> &s, std::vector<std::vector
 
     if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         two_opt(s, i_best, j_best);
+        load_subseq_info2(seq, s, i_best);
         /*
         std::cout << dif_lower << std::endl;
         std::cout << seq[0][dimension].C << std::endl;
@@ -459,102 +634,10 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::ve
 
     if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
         reinsert(s, i_best, j_best + 1, pos_new + 1);
+        load_subseq_info(seq, s);
         state = true;
     }
 
-}
-
-inline void cost_calc(std::vector<int> &s, double *cost_best){
-    *cost_best = 0;
-    double sum = 0;
-    for(unsigned i = 0; i < (unsigned)dimension; ++i)
-        sum += c[s[i]][s[i+1]];
-
-    *cost_best = sum;
-}
-
-inline double time_calc(std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = from; i < to; ++i)
-        sum += c[s[i]][s[i+1]];
-
-    return sum;
-}
-
-inline double cost_acumulated_calc(std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = to; i >= from; --i)
-        for(int j = from; j < i; j++)
-            sum += c[s[j]][s[j+1]];
-        
-
-    return sum;
-}
-
-inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
-    
-    //std::cout << "cost_1: " << std::endl;
-    /*
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = i; j < dimension+1; j++){
-            seq[i][j].T = time_calc(s, i, j);
-            seq[i][j].C = cost_acumulated_calc(s, i, j);
-            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
-            //std::cout << seq[s[i]][s[j]].W << " " ;
-
-            seq[j][i].C = seq[i][j].C;
-            seq[j][i].T = seq[i][j].T;
-            seq[j][i].W = seq[i][j].W;
-
-        }
-        //std::cout << std::endl;
-    }
-    //std::cout << seq[0][dimension].C << "\n" ;
-    for(int i = 0; i < dimension; i++){
-        for(int j = 0; j < dimension; j++){
-            std::cout << seq[s[i]][s[j]].C << " " ;
-
-        }
-        std::cout << std::endl;
-    }
-
-    //std::cout << "cost_2: " << std::endl;
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = i; j < dimension+1; j++){
-            seq[i][j].T = time_calc(s, i, j);
-            seq[i][j].C = time_calc(s, i, j) + seq[i][j-1].C*(j!=i);
-            //std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[i][j].W = j - i + 1 -(!i) - (j == dimension-1);
-
-        }
-        //std::cout << std::endl;
-    }
-
-*/
-    //std::cout << "cost_3: " << std::endl;
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = i; j < dimension+1; j++){
-            seq[i][j].T = (c[s[j-1]][s[j]] + seq[i][j-1].T)*(j!=i);
-            seq[i][j].C = seq[i][j].T + seq[i][j-1].C*(j!=i);
-            //std::cout << seq[s[i]][s[j]].C << " " ;
-            seq[i][j].W = j - i + 1 -(!i) ;//- (j == dimension);
-
-            seq[j][i].C = seq[i][j].C;
-            seq[j][i].T = seq[i][j].T;
-            seq[j][i].W = seq[i][j].W;
-        }
-        //std::cout << std::endl;
-    }
-
-    /*
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = 0; j < dimension+1; j++){
-            std::cout << seq[i][j].C << " " ;
-
-        }
-        std::cout << std::endl;
-    }
-    */
 }
 
 inline void neighbd_list_repopulate(std::vector<int> &list){
@@ -607,7 +690,7 @@ void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
 
         if(state){
             neighbd_list_repopulate(neighbd_list);
-            load_subseq_info(seq, s);
+            //load_subseq_info(seq, s);
         }else
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
         
@@ -710,9 +793,8 @@ void GILS_RVND(int Imax, int Iils){
     for(int i = 0; i < Imax; ++i){
 
         after();
-        int a = 99;
-        int aux = (unsigned)rand() % a + 1;
-        double alpha = 1.0 / aux;
+        int aux = (unsigned)rand() % TABLE_SZ;
+        double alpha = R_table(aux);
 
         printf("[+] Search %d\n", i+1);
         printf("\t[+] Constructing..\n");	
@@ -742,12 +824,12 @@ void GILS_RVND(int Imax, int Iils){
 
 
         swap_2(s, 7, 12);
-        load_subseq_info(subseq_info, s);
+        load_subseq_info(subseq_info, s, 0);
 
-        std::cout << "pos : " << subseq_info[0][dimension].C << std::endl;
-        std::cout << "pos : " << cost_acumulated_calc(s, 0, dimension) << std::endl;
+        //std::cout << "pos : " << subseq_info[0][dimension].C << std::endl;
+        //std::cout << "pos : " << cost_acumulated_calc(s, 0, dimension) << std::endl;
         exit(1);
-         */
+        */
 
         sl = s;
         int Iterils = 0;
@@ -799,7 +881,7 @@ void GILS_RVND(int Imax, int Iils){
 
 
 int main(int argc, char **argv){
-    int Imax = 50;
+    int Imax = 10;
     int Iils;
 
     flag = true;
@@ -807,10 +889,9 @@ int main(int argc, char **argv){
     srand(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
     readData(argc, argv, &dimension, &c);
 
-    if(dimension >= 150)
-        Iils = dimension / 2;
-    else
-        Iils = dimension;
+    int ar[] = {100, dimension};
+    
+    Iils = ar[dimension < 100];
 
     auto t1 = high_resolution_clock::now();
 
