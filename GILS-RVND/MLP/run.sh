@@ -69,7 +69,7 @@ for instance in instances/*; do
 	echo "Instance $k of $files" 
 
 	for i in $(seq 1 $t); do
-		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
+		./solve ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
 	done
 
 	k=$(($k + 1))

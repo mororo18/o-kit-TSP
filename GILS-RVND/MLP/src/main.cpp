@@ -11,22 +11,23 @@
 #include <math.h>
 #include <stdlib.h>
 #include "readData.h"
-#include <cassert>
 
 #define REINSERTION 1
 #define OR_OPT2 	2
 #define OR_OPT3 	3
 #define SWAP 		4
 #define TWO_OPT		5
+#define TABLE_SZ    26
+#define DBL_SZ      8
+#define INT_SZ      4
 
 using std::chrono::duration_cast;
 using std::chrono::microseconds;
 using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
-struct alignas(4) insertion_info {
+struct alignas(alignof(int)) insertion_info {
     double cost;
-    int edge_removed;
     int node_new;
 };
 
@@ -49,7 +50,6 @@ int dimension;
 std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
-
 bool state;
 bool flag;
 int sum_t = 0;
@@ -61,16 +61,6 @@ long opt3_t = 0;
 long construct_t = 0;
 long search_t; 
 long search_t_average = 0;
-
-#define TABLE_SZ 26
-
-double R_table(int i){
-    static const double table[] = {0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 
-                                    0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25};
-    //assert((unsigned) i >= (unsigned) TABLE_SZ);
-
-    return table[i];
-}
 
 void after(){
     if(!flag)
@@ -110,6 +100,13 @@ void before(int a){
     }
 }
 
+double R_table(int i){
+    static const double table[] = {0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 
+                                    0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25};
+
+    return table[i];
+}
+
 bool cost_compare(const insertion_info &a, const insertion_info &b){
     return a.cost < b.cost - DBL_EPSILON;
 }
@@ -121,7 +118,6 @@ void candidates_load(std::vector<int> &cand, int dim){
 }	
 
 inline void binary_search(std::vector<int> &vec, int node, short from, short to){
-    //short middle = (from + to) / 2; 
     #define MIDDLE (from + to) / 2
 
     if(vec[MIDDLE] == node){
@@ -159,9 +155,6 @@ void construct(std::vector<int> &s, const double alpha){
 
     while(!candidates.empty()){
 
-        //int dim = s.size() - 1;
-
-        //int insertion_possiblts = (dim * candidates.size());
         std::vector<struct insertion_info> insertion_cost (candidates.size());
 
         for(int i = 0; i < candidates.size(); ++i){   
@@ -178,8 +171,8 @@ void construct(std::vector<int> &s, const double alpha){
         int node_rand = insertion_cost[node_rand_index].node_new;
         s.insert(s.end() - 1, node_rand); 
         r = node_rand;
-        //printf("inserted node: %d\n", node_rand);
 
+        binary_search(candidates, node_rand, 0, candidates.size() );
         /*
         for(int i = 0; i < candidates.size(); ++i){
             if(candidates[i] ==  node_rand){
@@ -189,19 +182,8 @@ void construct(std::vector<int> &s, const double alpha){
         }
         */
 
-        binary_search(candidates, node_rand, 0, candidates.size() );
 
     }
-
-    /*  
-    for(int i = 0; i< s.size(); i++)
-        std::cout << s[i] << " ";
-
-    std::cout << std::endl;
-    */
-
-    //exit(-1);
-
 }	
 
 inline void swap_2(std::vector<int> &vec, int i, int j){
@@ -210,7 +192,6 @@ inline void swap_2(std::vector<int> &vec, int i, int j){
 
 inline void two_opt(std::vector<int> &vec, int i, int j){
     std::reverse(vec.begin() + i, vec.begin() + j+1);
-    //std::cout << "yas\n";
 }
 
 inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
@@ -233,50 +214,30 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 }
 
 inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
-    
-    //std::cout << "cost_3: " << std::endl;
-    alignas(4) int i;
-    alignas(4) int j;
-    alignas(4) int a;
-    alignas(4) int k;
-    alignas(4) int dim = dimension+1;
+    alignas(INT_SZ) int i, j, a, k;
+    alignas(INT_SZ) int dim = dimension+1;
     alignas(1) bool t;
     for(i = 0; i < dim; i++){
         k = 1 - i -(!i);
-        //t = false;
+
+        // 'one node' case
         seq[i][i].T = 0;
         seq[i][i].C = 0;
-        seq[i][i].W = !(i == 0) ;
+        seq[i][i].W = !(i == 0);
         for(j = i+1; j < dim; j++){
             a = j-1;
             seq[i][j].T = c[s[a]][s[j]] + seq[i][a].T ;
             seq[i][j].C = seq[i][j].T + seq[i][a].C;
-            //std::cout << seq[s[i]][s[j]].C << " " ;
             seq[i][j].W = j + k ;
 
         }
-        //std::cout << std::endl;
     }
-
-    /*
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = 0; j < dimension+1; j++){
-            std::cout << seq[i][j].C << " " ;
-
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-    */
 }
 
 inline void load_subseq_info2(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int index = 0){
-    alignas(4) int i;
-    alignas(4) int j;
-    alignas(4) int a;
-    alignas(4) int k;
-    alignas(4) int dim = dimension+1;
-    alignas(4) int from = index;
+    alignas(INT_SZ) int i, j, a, k;
+    alignas(INT_SZ) int dim = dimension+1;
+    alignas(INT_SZ) int from = index;
     alignas(1) bool t;
     for(i = 0; i < dim; i++){
         k = 1 - i -(!i);
@@ -285,52 +246,10 @@ inline void load_subseq_info2(std::vector<std::vector<struct subseq>> &seq, std:
             a = j-1;
             seq[i][j].T = c[s[a]][s[j]] + seq[i][a].T;
             seq[i][j].C = seq[i][j].T + seq[i][a].C;
-            seq[i][j].W = j + k ;//- (j == dimension);
+            seq[i][j].W = j + k ;
         }
         from += t;
     }
-
-    /*
-    for(int i = 0; i < dimension+1; i++){
-        for(int j = 0; j < dimension+1; j++){
-            std::cout << seq[i][j].C << " " ;
-
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-    */
-}
-
-
-#define DBL_SZ 8
-#define INT_SZ 4
-
-inline void cost_calc(std::vector<int> &s, double *cost_best){
-    *cost_best = 0;
-    double sum = 0;
-    for(unsigned i = 0; i < (unsigned)dimension; ++i)
-        sum += c[s[i]][s[i+1]];
-
-    *cost_best = sum;
-}
-
-inline double time_calc(std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = from; i < to; ++i)
-        sum += c[s[i]][s[i+1]];
-
-    return sum;
-}
-
-inline double cost_acumulated_calc(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int from, int to){
-    double sum = 0;
-    for(int i = to; i > from; --i)
-        //for(int j = from; j < i; j++)
-        sum += seq[from][i].T;
-        
-
-    return sum;
 }
 
 inline double cost_reverse_calc(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int from, int to){
@@ -341,21 +260,9 @@ inline double cost_reverse_calc(std::vector<std::vector<struct subseq>> &seq, st
 }
 
 inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
-    alignas(DBL_SZ) double dif;
-    alignas(DBL_SZ) double dif1;
-    alignas(DBL_SZ) double dif2;
-    alignas(DBL_SZ) double dif3;
-    alignas(DBL_SZ) double dif4;
-    alignas(DBL_SZ) double dif_lower;
-    alignas(INT_SZ) int i;
-    alignas(INT_SZ) int j;
-    alignas(INT_SZ) int e;
-    alignas(INT_SZ) int b;
-    alignas(INT_SZ) int d;
-    alignas(INT_SZ) int a;
-    alignas(INT_SZ) int o;
-    alignas(INT_SZ) int p;
-    alignas(INT_SZ) int q;
+    alignas(DBL_SZ) double cost, cost1, cost2, cost3, cost4;
+    alignas(DBL_SZ) double cost_lower;
+    alignas(INT_SZ) int i, j, e, b, d, a, q;
     alignas(INT_SZ) int dim = dimension - 2;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
@@ -363,27 +270,19 @@ inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<st
     alignas(1) bool l;
 
     for(i = 1; i < dimension - 1; ++i){
-        //o = s[i];
         d = i - 1;
         a = i + 1;
         q = a + 1;
-        l = false;
-
-        //dif1 = - c[s[i]][s[d]];
-        //dif3 = dif1 - c[s[i]][s[a]];
-
-        // i-1
-        // a+1
-
-        dif1 = seq[0][d].T + c[s[d]][s[a]];
-        dif2 = dif1 + seq[i][a].T  + c[s[i]][s[q]];
 
         //consecutive nodes
-        dif = seq[0][d].C + seq[i][a].W * (dif1) +  c[s[a]][s[i]];
-        dif = dif + seq[q][dimension].W * (dif2) +  seq[q][dimension].C;
+        cost1 = seq[0][d].T + c[s[d]][s[a]];
+        cost2 = cost1 + seq[i][a].T  + c[s[i]][s[q]];
 
-        if(dif < dif_lower || t){
-            dif_lower = dif - DBL_EPSILON;
+        cost = seq[0][d].C + seq[i][a].W * (cost1) +  c[s[a]][s[i]];
+        cost = cost + seq[q][dimension].W * (cost2) +  seq[q][dimension].C;
+
+        if(cost < cost_lower || t){
+            cost_lower = cost - DBL_EPSILON;
             i_best = i;
             j_best = a;
             t = 0;
@@ -392,93 +291,58 @@ inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<st
         if(i == dim) continue;
 
         for(j = q; j < dimension; ++j){
-            //p = s[j];
             b = j + 1;
             e = j - 1;
 
-            // i-1 -> d
-            // i+1 -> a
-            // j-1 -> e
-            // j+1 -> b
+            cost1 = seq[0][d].T + c[s[d]][s[j]];
+            cost2 = cost1 + c[s[j]][s[a]];
+            cost3 = cost2 + seq[a][e].T + c[s[e]][s[i]];
+            cost4 = cost3 + c[s[i]][s[b]];
 
-            /*
-            dif1 = seq[0][i-1].C + seq[j][j].W * (seq[0][i-1].T + c[s[i-1]][s[j]]) +  c[s[j]][s[j]];
-            dif2 =  seq[i+1][j-1].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] ) +  seq[i+1][j-1].C;
-            dif3 =  seq[i][i].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] + seq[i+1][j-1].T+ c[s[j-1]][s[i]]) + seq[i][i].C;
-            dif4 =  seq[j+1][dimension].W * (seq[0][i-1].T + c[s[i-1]][s[j]] + seq[j][j].T  + c[s[j]][s[i+1]] + seq[i+1][j-1].T+ c[s[j-1]][s[i]] + seq[i][i].T + c[s[i]][s[j+1]]) + seq[j+1][dimension].C;
-            dif = (dif1+dif2)+(dif3+dif4);
-            */
-            dif1 = seq[0][d].T + c[s[d]][s[j]];
-            dif = seq[0][d].C +        (dif1) ;
-            
-            dif2 = dif1 + c[s[j]][s[a]];
-            dif = dif + seq[a][e].W *(dif2) +  seq[a][e].C;
+            cost  = seq[0][d].C + cost1;
+            cost += seq[a][e].W * cost2 + seq[a][e].C;
+            cost += cost3;
+            cost += seq[b][dimension].W * cost4 + seq[b][dimension].C;
 
-            dif3 = dif2 + seq[a][e].T + c[s[e]][s[i]];
-            dif = dif +                  (dif3) ;
-
-            dif4 = dif3 + c[s[i]][s[b]];
-            dif = dif + seq[b][dimension].W * (dif4) + seq[b][dimension].C;
-
-            if(dif < dif_lower){
-                dif_lower = dif - DBL_EPSILON;
+            if(cost < cost_lower){
+                cost_lower = cost - DBL_EPSILON;
                 i_best = i;
                 j_best = j;
             }
         }
     }
 
-    if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
+    if(cost_lower < seq[0][dimension].C - DBL_EPSILON){
         swap_2(s, i_best, j_best);
         load_subseq_info2(seq, s, i_best);
-        /*
-        std::cout << dif_lower << std::endl;
-        std::cout << seq[0][dimension].C << std::endl;
-
-        std::cout  << std::endl;
-        */
         state = true;
     }
 }
 
 inline void neighbor_two_opt_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
-    alignas(DBL_SZ) double cost;
-    alignas(DBL_SZ) double cost_l1;
-    alignas(DBL_SZ) double cost_l2;
-    alignas(DBL_SZ) double cost1;
-    alignas(DBL_SZ) double cost2;
-    alignas(DBL_SZ) double cost_lower;
+    alignas(DBL_SZ) double cost, cost1, cost2;
+    alignas(DBL_SZ) double cost_lower, cost_l1, cost_l2;
     alignas(DBL_SZ) double rev;
-    alignas(INT_SZ) int b;
-    alignas(INT_SZ) int a;
-    alignas(INT_SZ) int j;
-    alignas(INT_SZ) int i;
+    alignas(INT_SZ) int i, j, b, a;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
     alignas(1) bool t = 1;
 
     for(i = 1; i < dimension - 1; ++i){
         b = i - 1;
-        //dif1 = - c[s[i]][b];
+
         for(j = i + 2; j < dimension; ++j){
             a = j + 1;
             rev = cost_reverse_calc(seq, s, i, j);
 
-            // i-1
-            // j+1
-
-            //dif = (dif1 - c[s[j]][s[a]])  + (c[s[j]][b] + c[s[i]][s[a]]);
             cost1 = seq[0][b].T + c[s[j]][s[b]];
             cost2 = cost1 + seq[i][j].T  + c[s[a]][s[i]];
 
             cost_l1 = seq[0][b].C + seq[i][j].W * (cost1) +  rev;
-
             cost_l2 = seq[a][dimension].W * (cost2) +  seq[a][dimension].C;
 
             cost = cost_l1 + cost_l2;
-            //std::cout << dif << std::endl;
             
-
             if(cost < cost_lower || t){
                 cost_lower = cost - DBL_EPSILON;
                 i_best = i;
@@ -498,49 +362,36 @@ inline void neighbor_two_opt_better(std::vector<int> &s, std::vector<std::vector
 
 
 inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq, int sz){
-    alignas(DBL_SZ) double dif, dif1, dif2, dif3;
-    alignas(DBL_SZ) double dif_lower, dif_l1, dif_l2, dif_l3;
-    alignas(INT_SZ) int i, j, k, g, b, a, o, e;
+    alignas(DBL_SZ) double cost, cost1, cost2, cost3;
+    alignas(DBL_SZ) double cost_lower, cost_l1, cost_l2, cost_l3;
+    alignas(INT_SZ) int i, j, k, g, b, e;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
     alignas(INT_SZ) int pos_new;
     alignas(INT_SZ) int k_lim = dimension - sz - 1;
-    //alignas(INT_SZ) int ar[2];
     alignas(1) bool l;
     alignas(1) bool t = 1;
 
     for(i = 1, j = sz + i - 1; i < dimension - sz + 1; ++i, ++j){
-        //a = s[i];
-        //o = s[j];
         e = j + 1;
         b = i - 1;
-        //l = 1;
-
-        //dif1 = c[s[b]][s[e]] - c[s[i]][s[b]] - c[s[j]][s[e]];
 
         //k -> edges 
         for(k = 0; k < b; ++k){
-            
             g = k + 1;
-            // k+1
-            // i-1 -> b
-            // j+1 -> e
 
-            dif1 = seq[0][k].T + c[s[k]][s[i]];
-            dif2 = dif1 + seq[i][j].T + c[s[j]][s[g]];
-            dif3 = dif2 + seq[g][b].T + c[s[b]][s[e]];
+            cost1 = seq[0][k].T + c[s[k]][s[i]];
+            cost2 = cost1 + seq[i][j].T + c[s[j]][s[g]];
+            cost3 = cost2 + seq[g][b].T + c[s[b]][s[e]];
 
-            dif_l1 = seq[0][k].C + seq[i][j].W*   (dif1) + seq[i][j].C; 
-         
+            cost_l1 = seq[0][k].C + seq[i][j].W * cost1 + seq[i][j].C; 
+            cost_l2 =               seq[g][b].W * cost2 + seq[g][b].C;
+            cost_l3 =       seq[e][dimension].W * cost3 + seq[e][dimension].C;
 
-            dif_l2 =  seq[g][b].W*       (dif2) + seq[g][b].C;
+            cost = cost_l1 + cost_l2 + cost_l3;
 
-            dif_l3 =  seq[e][dimension].W* (dif3) + seq[e][dimension].C;
-
-            dif = dif_l1 + dif_l2 + dif_l3;
-
-            if( dif < dif_lower || t){
-                dif_lower = dif - DBL_EPSILON;
+            if( cost < cost_lower || t){
+                cost_lower = cost - DBL_EPSILON;
                 i_best = i;
                 j_best = j;
                 pos_new = k;
@@ -551,28 +402,20 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::ve
         }
 
         for(k = i + sz; k < k_lim; ++k){
-
             g = k + 1;
-            // i-1 -> b
-            // j+1 -> e
-            // k+1
 
-            //dif = (dif1 + c[a][s[k]]) + (c[o][s[g]] - c[s[g]][s[k]]); 
+            cost1 = seq[0][b].T + c[s[b]][s[e]];
+            cost2 =cost1 + seq[e][k].T + c[s[k]][s[i]];
+            cost3 = cost2 + seq[i][j].T + c[s[j]][s[g]];
 
-            dif1 = seq[0][b].T + c[s[b]][s[e]];
-            dif2 =dif1 + seq[e][k].T + c[s[k]][s[i]];
-            dif3 = dif2 + seq[i][j].T + c[s[j]][s[g]];
+            cost_l1 = seq[0][b].C + seq[e][k].W * cost1 + seq[e][k].C; 
+            cost_l2 =               seq[i][j].W * cost2 + seq[i][j].C;
+            cost_l3 =       seq[g][dimension].W * cost3 + seq[g][dimension].C;
 
-            dif_l1 = seq[0][b].C + seq[e][k].W * (dif1) + seq[e][k].C; 
+            cost = cost_l1 + cost_l2 + cost_l3;
 
-            dif_l2= seq[i][j].W *             (dif2 ) + seq[i][j].C;
-
-            dif_l3=  seq[g][dimension].W *   (dif3 ) + seq[g][dimension].C;
-
-            dif = dif_l1 + dif_l2 + dif_l3;
-
-            if( dif < dif_lower){
-                dif_lower = dif - DBL_EPSILON;
+            if( cost < cost_lower){
+                cost_lower = cost - DBL_EPSILON;
                 i_best = i;
                 j_best = j;
                 pos_new = k;
@@ -581,7 +424,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::ve
         }
     }
 
-    if(dif_lower < seq[0][dimension].C - DBL_EPSILON){
+    if(cost_lower < seq[0][dimension].C - DBL_EPSILON){
         reinsert(s, i_best, j_best + 1, pos_new + 1);
         int ar[] = {pos_new+1, i_best};
         load_subseq_info2(seq, s, ar[l]);
@@ -600,8 +443,8 @@ void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
 
     //printf("for -> while -> RVND\n");
     alignas(alignof(std::vector<int>)) std::vector<int> neighbd_list = {1,2,3,4,5};
-    alignas(4) int neighbd_rand_index;
-    alignas(4) int neighbd_rand;
+    alignas(INT_SZ) int neighbd_rand_index;
+    alignas(INT_SZ) int neighbd_rand;
 
     while(!neighbd_list.empty()){
 
@@ -700,7 +543,6 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
         }
     }
 
-    //dimension = s.size() - 1;
     while(true){
         int pos = (unsigned)rand() % dimension + 1;
         if(s[pos-1] == sub_seq2->prev || s[pos] == sub_seq2->next){
@@ -747,18 +589,14 @@ void GILS_RVND(int Imax, int Iils){
         printf("\t[+] Constructing..\n");	
         //after();
         construct(s, alpha);
-
-        load_subseq_info(subseq_info, s);
-
-        sl = s;
-        int Iterils = 0;
         //before(6);
+        sl = s;
 
         printf("\t[+] Looking for the best Neighbor..\n");
+        load_subseq_info(subseq_info, s);
         cost_rvnd_best = subseq_info[0][dimension].C - DBL_EPSILON;
-        //std::cout << cost_rvnd_best << std::endl;
-        //std::cout << cost_acumulated_calc(s, 0, dimension) << std::endl;
 
+        int Iterils = 0;
         while(Iterils < Iils){
             RVND(s, subseq_info);
             cost_rvnd_current = subseq_info[0][dimension].C - DBL_EPSILON;
@@ -766,7 +604,6 @@ void GILS_RVND(int Imax, int Iils){
                 sl.clear();
                 sl = s;
                 cost_rvnd_best = cost_rvnd_current - DBL_EPSILON;
-                //std::cout << cost_rvnd_best << std::endl;
                 Iterils = 0;
             }
             perturb(sl, s);
