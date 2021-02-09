@@ -138,7 +138,7 @@ void construct(std::vector<int> &s, const double alpha){
     candidates.reserve(dimension);
     candidates_load(candidates, dimension);
 
-    int subtour_inicial = 3;
+    //int subtour_inicial = 3;
 
     /*
     for(int i = subtour_inicial; --i;){
