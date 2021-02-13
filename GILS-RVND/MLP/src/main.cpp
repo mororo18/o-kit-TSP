@@ -22,7 +22,7 @@
 #define INT_SZ      4
 
 using std::chrono::duration_cast;
-using std::chrono::microseconds;
+using std::chrono::nanoseconds;
 using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 
@@ -637,7 +637,7 @@ int main(int argc, char **argv){
 
     flag = true;
 
-    srand(duration_cast<microseconds>(system_clock::now().time_since_epoch()).count());
+    srand(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
     readData(argc, argv, &dimension, &c);
 
     int ar[] = {100, dimension};
