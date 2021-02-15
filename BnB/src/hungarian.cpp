@@ -31,7 +31,7 @@
 #include "data.h"
 
 #define INF (0x7FFFFFFF)
-#define verbose (1)
+#define verbose (0)
 
 #define hungarian_test_alloc(X) do {if ((void *)(X) == NULL) fprintf(stderr, "Out of memory in %s, (%s, line %d).\n", __FUNCTION__, __FILE__, __LINE__); } while (0)
 
@@ -71,7 +71,7 @@ int hungarian_imax(int a, int b) {
     return (a<b)?b:a;
 }
 
-int hungarian_init(hungarian_problem_t* p, double** cost_matrix, int rows, int cols, int mode) {
+int hungarian_init(hungarian_problem_t* p, int** cost_matrix, int rows, int cols, int mode) {
 
     int i,j, org_cols, org_rows;
     int max_cost;
@@ -370,15 +370,13 @@ done:
     // Begin doublecheck the solution 23
     for (k=0;k<m;k++){
         for (l = 0; l < n; l++){
-            std::cout << p->cost[k][l] << " " ;
+            //std::cout << p->cost[k][l] << " " ;
             if (p->cost[k][l] < row_dec[k] - col_inc[l]){
-                std::cout << m << std::endl;
-                std::cout << n << std::endl;
                 std::cout << "DoubleCheck Problem in first check" << std::endl;
                 exit(0);
             }
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
     for (k=0;k<m;k++)
     {
