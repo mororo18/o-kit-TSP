@@ -22,7 +22,7 @@ class Data{
         inline double getXCoord(int i){return xCoord[i];}
         inline double getYCoord(int i){return yCoord[i];}
         inline bool getExplicitCoord(){return explicitCoord; };
-        int getOptimalCost() { return value; };
+        //int getOptimalCost() { return value; };
 
         string getInstanceName();                    //Get instance's name
 
@@ -31,8 +31,8 @@ class Data{
         int nbOfPar;
 
         int dimension;
-        int value;
-        string path = "benchmark/target_data";
+        //int value;
+        //string path = "benchmark/target_data";
 
         double **distMatrix;
         double *xCoord, *yCoord;

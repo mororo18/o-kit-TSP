@@ -69,7 +69,7 @@ void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, 
     }
 }
 
-void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution, int dimension){
+void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem_t * solution, int dimension){
     std::vector<std::vector<int>> tour(1, std::vector<int> (1, 1));
     bool nodes_known[dimension] = {0};
     bool flag;
@@ -78,26 +78,26 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
     int tour_node_first = 1;
     nodes_known[index] = true;
     //tour[count].push_back(index+1);
-    std::cout << "yes"  << std::endl;
+    //std::cout << "yes"  << std::endl;
 
     while(true){
 
+        //std::cout << index+1 << " ";
         // identify the edges
         for(int i = 0; i < dimension; i++){
-            //std::cout << solution->assignment[index][i];// << std::endl;
             if(solution->assignment[index][i]){
                 nodes_known[index] = true;
                 index = i;
                 break;
             }
         }
-        //std::cout << std::endl;
 
         tour[count].push_back(index+1);
-        std::cout << index+1 << std::endl;
 
         // identify the end of the subtour 
         if(tour_node_first == index+1){
+            //std::cout << index+1 << " ";
+            //std::cout << std::endl;
             count++;
             flag = false;
             // take the next free node and creates a new subtour
@@ -127,13 +127,21 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
 
     int sz = tour.size();
     for(int i = sz-1; i >= 0 ; i--)
-        if(tour[i].size() == 2){
+        if(tour[i].size() <= 3){
             tour.erase(tour.begin() + i);
         }
 
-    std::partial_sort(tour.begin(), tour.begin()+1,tour.end(), subtour_cmp); 
+    if(tour.empty()){
+        //std::vector<int> vec_empty();
+        //subtour = vec_empty;
+        subtour.clear();
+        return;
+    }
+
+    std::partial_sort(tour.begin(), tour.end(),tour.end(), subtour_cmp); 
     //std::partial_sort(tour.begin(), tour.begin(),tour.begin()+1, subtour_cmp2);
 
+    /*
     for(int i = 0; i < tour[0].size(); i++){
         //for(int j = 0; j < tour[i].size(); j++)
             std::cout << tour[0][i] << " ";
@@ -148,7 +156,8 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
 
         std::cout << std::endl;
     }
-    subtour = tour[0];
+    */
+    subtour = tour;
 }
 
 void matrix_print(int ** ar, int dimension){
@@ -161,9 +170,9 @@ void matrix_print(int ** ar, int dimension){
     }
 }
 
-std::vector<int> s;
+std::vector<std::vector<int>> s;
 
-void branch_AND_bound(Data *data, int ** cost, struct node_info node_root){
+void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
 
 	hungarian_problem_t p;
 	const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
@@ -175,7 +184,7 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root){
     //std::cout << "old :" << std::endl;
     //matrix_print(cost, dimension);
     //std::cout << "new :" << std::endl;
-    matrix_print(cost_new, dimension);
+    //matrix_print(cost_new, dimension);
 
     //std::cout << "aqui1" << std::endl;
 	hungarian_init(&p, cost_new, dimension, dimension, mode); // Carregando o problema
@@ -184,50 +193,55 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root){
 
 	int obj_value = hungarian_solve(&p);
     //std::cout << "aqui3" << std::endl;
-	std::cout << "Obj. value: " << obj_value << std::endl;
-	hungarian_print_assignment(&p);
+	//std::cout << "Obj. value: " << obj_value << std::endl;
+	//hungarian_print_assignment(&p);
     
-    std::vector<int> subtour;
+    std::vector<std::vector<int>> subtour;
     subtour_lower_get(subtour, &p, dimension);
 	hungarian_free(&p);
-    //exit(0);
-    //std::cout << " aqui4 " << subtour[0] << subtour[1]<< std::endl;
+    int count;
+    //count = gen+1;
+    //std::cout << count << "th generation" << std::endl;
+    for(int j = 0; j < subtour.size(); j++){
+        //exit(0);
+        //std::cout << " aqui4 " << subtour[0] << subtour[1]<< std::endl;
 
 
-    //if(obj_value > INFINITE-1) return;
-    
-    if(subtour.size() == dimension+1){ 
-        /*
-        for(int i = 0; i< dimension+1; i++)
-            std::cout << subtour[i] << " ";
-        std::cout << std::endl;
-        */
-        s.push_back(obj_value);
-        exit(0);
-        return;
-    }else
-    
+        //if(obj_value > cost_optimal) return;
+
+        int sol_sz = s.size();
         
-    /*
-    for(int j = 0; j < subtour.size(); j++)
-        std::cout << subtour[j] << " ";
-    
-    std::cout << std::endl;
-    */
+        //std::cout << subtour[j].size() << std::endl;
+        if(subtour[j].size() == dimension+1){ 
+            /*
+               for(int i = 0; i< dimension+1; i++)
+               std::cout << subtour[i] << " ";
+               std::cout << std::endl;
+             */
+            std::cout << obj_value << std::endl;
+            s.push_back(subtour[j]);
+            exit(0);
+            //return;
+        }else if(obj_value <= cost_optimal && !subtour[j].empty()){
 
-        for(int i = 0; i < subtour.size() - 2; i++){
-            struct node_info node_son;
+            for(int i = 0; i < subtour[j].size() - 1; i++){
+                struct node_info node_son;
 
-            node_son.edges_illegal = node_root.edges_illegal;
+                node_son.edges_illegal = node_root.edges_illegal;
 
-            std::pair<int, int> edge;
-            edge.first = subtour[i];
-            edge.second = subtour[i+1];
+                std::pair<int, int> edge;
+                edge.first = subtour[j][i];
+                edge.second = subtour[j][i+1];
 
-            node_son.edges_illegal.push_back(edge);
-            branch_AND_bound(data, cost, node_son);
+                node_son.edges_illegal.push_back(edge);
+                branch_AND_bound(data, cost, node_son, count);
 
+            }
         }
+
+        if(sol_sz != s.size())
+            break;
+    }
 
 }
 
@@ -284,10 +298,13 @@ int main(int argc, char** argv) {
     */
 
     struct node_info node_initial;
-    branch_AND_bound(data, cost, node_initial);
-    for(int i = 0; i< s.size(); i++)
-        std::cout << s[i] << " ";
-    std::cout << std::endl;
+    branch_AND_bound(data, cost, node_initial, 0);
+    for(int i = 0; i< s.size(); i++){
+        for(int j = 0; j< s[i].size(); i++)
+            std::cout << s[i][j] << " ";
+
+        std::cout << std::endl;
+    }
 	for (int i = 0; i < data->getDimension(); i++) 
         delete [] cost[i];
 	delete [] cost;

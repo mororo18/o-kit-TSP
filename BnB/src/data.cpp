@@ -23,7 +23,6 @@ Data::Data( int qtParam, char * instance ):
         nbOfPar = qtParam;
         dimension = -1;
         explicitCoord = false;
-        value = 0;
     }
 
 Data::~Data(){
