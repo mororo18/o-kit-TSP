@@ -33,7 +33,7 @@ bool subtour_cmp(std::vector<int> &a, std::vector<int> &b){
 }
 
 void cost_matrix_alloc(int *** matrix, int dimension){
-	int ** ptr =  (int**)calloc(dimension, sizeof(int*));
+    int ** ptr =  (int**)calloc(dimension, sizeof(int*));
     hungarian_test_alloc(ptr);
     for(int i = 0; i < dimension; i++){
         ptr[i] =  (int*)calloc(dimension, sizeof(int));
@@ -119,25 +119,25 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
 
 void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
 
-	hungarian_problem_t p;
-	const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
+    hungarian_problem_t p;
+    const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
     const int dimension = data->getDimension();
 
     int ** cost_new;
     cost_matrix_alloc(&cost_new, dimension);
     cost_restriction(node_root.edges_illegal, cost, cost_new, dimension);
 
-	hungarian_init(&p, cost_new, dimension, dimension, mode); 
+    hungarian_init(&p, cost_new, dimension, dimension, mode); 
     cost_matrix_free(&cost_new, dimension);
 
-	int obj_value = hungarian_solve(&p);
+    int obj_value = hungarian_solve(&p);
 
     if(obj_value <= cost_optimal){
-        
+
         std::vector<int> subtour;
         subtour_lower_get(subtour, &p, dimension);
         hungarian_free(&p);
-        
+
         if(subtour.size() >= dimension){ 
             // valid solution
             cost_optimal = obj_value;
@@ -164,36 +164,36 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
 }
 
 int cost_optimal_get(char * instance_name){
-     string path = "benchmark/target_data";
-     int value;
-     string file;
-     ifstream inTSP(path, ios::in);
- 
-     inTSP >> file;
-     while ( file.find((string)instance_name+":") != 0) {
-         inTSP >> file;
-     }
+    string path = "benchmark/target_data";
+    int value;
+    string file;
+    ifstream inTSP(path, ios::in);
 
-     int pos = file.find(":") + 1;
-     string value_str = file.substr(pos);
- 
-     value = stoi(value_str);
- 
-     return value;
+    inTSP >> file;
+    while ( file.find((string)instance_name+":") != 0) {
+        inTSP >> file;
+    }
+
+    int pos = file.find(":") + 1;
+    string value_str = file.substr(pos);
+
+    value = stoi(value_str);
+
+    return value;
 }
 
 int main(int argc, char** argv) {
 
-	Data * data = new Data(argc, argv[1]);
-	data->readData();
+    Data * data = new Data(argc, argv[1]);
+    data->readData();
 
-	int **cost = new int*[data->getDimension()];
-	for (int i = 0; i < data->getDimension(); i++){
-		cost[i] = new int[data->getDimension()];
-		for (int j = 0; j < data->getDimension(); j++){
-			cost[i][j] = data->getDistance(i, j);
-		}
-	}
+    int **cost = new int*[data->getDimension()];
+    for (int i = 0; i < data->getDimension(); i++){
+        cost[i] = new int[data->getDimension()];
+        for (int j = 0; j < data->getDimension(); j++){
+            cost[i][j] = data->getDistance(i, j);
+        }
+    }
 
     cost_optimal = cost_optimal_get(argv[1]);
 
@@ -210,12 +210,12 @@ int main(int argc, char** argv) {
 
     std::cout << "Cost: " << cost_optimal << std::endl;
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-	std::cout << "Execution time: " << exec_time / 10e2  << std::endl;
+    std::cout << "Execution time: " << exec_time / 10e2  << std::endl;
 
     for (int i = 0; i < data->getDimension(); i++) 
         delete [] cost[i];
     delete [] cost;
-	delete data;
+    delete data;
 
-	return 0;
+    return 0;
 }
