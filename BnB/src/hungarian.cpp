@@ -73,7 +73,7 @@ int hungarian_imax(int a, int b) {
 
 int hungarian_init(hungarian_problem_t* p, int** cost_matrix, int rows, int cols, int mode) {
 
-    int i,j, org_cols, org_rows;
+    alignas(alignof(int)) int i,j, org_cols, org_rows;
     int max_cost;
     max_cost = 0;
 
@@ -143,15 +143,15 @@ void hungarian_free(hungarian_problem_t* p) {
 
 int hungarian_solve(hungarian_problem_t* p)
 {
-    int i, j, m, n, k, l, s, t, q, unmatched, cost;
-    int* col_mate;
-    int* row_mate;
-    int* parent_row;
-    int* unchosen_row;
-    int* row_dec;
-    int* col_inc;
-    int* slack;
-    int* slack_row;
+    alignas(alignof(int)) int i, j, m, n, k, l, s, t, q, unmatched, cost;
+    alignas(alignof(int*)) int* col_mate;
+    alignas(alignof(int*)) int* row_mate;
+    alignas(alignof(int*)) int* parent_row;
+    alignas(alignof(int*)) int* unchosen_row;
+    alignas(alignof(int*)) int* row_dec;
+    alignas(alignof(int*)) int* col_inc;
+    alignas(alignof(int*)) int* slack;
+    alignas(alignof(int*)) int* slack_row;
 
 
     cost=0;
@@ -263,7 +263,7 @@ row_done:
                     for (l=0;l<n;l++)
                         if (slack[l])
                         {
-                            int del;
+                            alignas(alignof(int)) int del;
                             del=p->cost[k][l]-s+col_inc[l];
                             if (del<slack[l])
                             {

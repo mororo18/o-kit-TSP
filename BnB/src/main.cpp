@@ -7,8 +7,6 @@
 #include "data.h"
 #include "hungarian.h"
 
-//using namespace std;
-
 struct node_info {
     std::vector<std::pair<int, int>> edges_illegal;
     std::vector<std::vector<int>> subtour;
@@ -18,21 +16,26 @@ struct node_info {
 };
 
 int cost_optimal;
+std::vector<int> s;
+
+void cost_matrix_print(int ** ar, int dimension){
+    for(int i = 0; i < dimension; i++){
+        for(int j = 0; j < dimension; j++){
+            std::cout << ar[i][j] << " ";
+
+        }
+        std::cout << std::endl;
+    }
+}
 
 bool subtour_cmp(std::vector<int> &a, std::vector<int> &b){
     return (a.size() < b.size());// && a[0] < b[0];
 }
 
-bool subtour_cmp2(std::vector<int> &a, std::vector<int> &b){
-    return a[0] < b[0];
-}
-
-void matrix_alloc(int *** matrix, int dimension){
-	//double ** ptr = new double*[dimension];
+void cost_matrix_alloc(int *** matrix, int dimension){
 	int ** ptr =  (int**)calloc(dimension, sizeof(int*));
     hungarian_test_alloc(ptr);
     for(int i = 0; i < dimension; i++){
-        //ptr[i] = new double[dimension];
         ptr[i] =  (int*)calloc(dimension, sizeof(int));
         hungarian_test_alloc(ptr[i]);
     }
@@ -40,37 +43,30 @@ void matrix_alloc(int *** matrix, int dimension){
     *matrix = ptr;
 }
 
-inline void matrix_free(int *** ptr, int dimension){
+inline void cost_matrix_free(int *** ptr, int dimension){
     int ** ar = *ptr;
     for(int i = 0; i < dimension; i++)
-        //printf("%p ", ptr[i]);
         free(ar[i]);
-        //delete [] ar[i];
-	//delete [] ar;
     free(ar);
-    //printf("\n%p \n", *ptr);
 
     *ptr = NULL;
-
 }
 
 void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, int ** cost_new, int dimension){
+    // cpy the old to the new matrix of costs
     for(int i = 0; i < dimension; i++)
         memcpy(cost_new[i], cost_old[i], dimension*sizeof(int));  
 
-    //can be reduced for just load the last illegal edge
+    // apply the restrictions
     for(int i = 0; i < edges.size(); i++){
         int a = edges[i].first - 1;
         int b = edges[i].second - 1;
 
-        //std::cout << "EDGE SZ :" << edges.size() << std::endl;
-        //std::cout << b << std::endl;
-        cost_new[a][b] = INFINITE;// DBL_MAX;
-        //cost_new[b][a] = INFINITE;//DBL_MAX;
+        cost_new[a][b] = INFINITE;
     }
 }
 
-void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem_t * solution, int dimension){
+void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution, int dimension){
     std::vector<std::vector<int>> tour(1, std::vector<int> (1, 1));
     bool nodes_known[dimension] = {0};
     bool flag;
@@ -78,8 +74,6 @@ void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem
     int index = 0;
     int tour_node_first = 1;
     nodes_known[index] = true;
-    //tour[count].push_back(index+1);
-    //std::cout << "yes"  << std::endl;
 
     while(true){
 
@@ -112,164 +106,76 @@ void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem
                     break;
                 }
 
-            // when there is no node avaliable for a new tour
+            // when there is no avaliable node for a new tour
             if(!flag)
                 break;
         }
     }
-    /*
-    for(int i = 0; i < tour.size(); i++){
-        for(int j = 0; j < tour[i].size(); j++)
-            std::cout << tour[i][j] << " ";
 
-        std::cout << std::endl;
-    }
+    std::partial_sort(tour.begin(), tour.begin()+1,tour.end(), subtour_cmp); 
 
-    int sz = tour.size();
-    for(int i = sz-1; i >= 0 ; i--)
-        if(tour[i].size() <= 3){
-            tour.erase(tour.begin() + i);
-        }
-
-    if(tour.empty()){
-        //std::vector<int> vec_empty();
-        //subtour = vec_empty;
-        subtour.clear();
-        return;
-    }
-
-    */
-
-    std::sort(tour.begin()/*, tour.begin()+1*/,tour.end(), subtour_cmp); 
-    //std::partial_sort(tour.begin(), tour.begin(),tour.begin()+1, subtour_cmp2);
-
-    /*
-    for(int i = 0; i < tour[0].size(); i++){
-        //for(int j = 0; j < tour[i].size(); j++)
-            std::cout << tour[0][i] << " ";
-
-        //std::cout << std::endl;
-    }
-    std::cout << std::endl;
-
-    for(int i = 0; i < tour.size(); i++){
-        for(int j = 0; j < tour[i].size(); j++)
-            std::cout << tour[i][j] << " ";
-
-        std::cout << std::endl;
-    }
-    */
-    subtour = tour;
+    subtour = tour[0];
 }
 
-void matrix_print(int ** ar, int dimension){
-    for(int i = 0; i < dimension; i++){
-        for(int j = 0; j < dimension; j++){
-            std::cout << ar[i][j] << " ";
-
-        }
-        std::cout << std::endl;
-    }
-}
-
-std::vector<std::vector<int>> s;
-std::vector<int> bigest;
-
-inline void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
-
-    //int count;
-    //std::cout << std::endl << gen << "th generation" << std::endl;
-    //count = gen+1;
+void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
 
 	hungarian_problem_t p;
 	const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
     const int dimension = data->getDimension();
 
     int ** cost_new;
-    matrix_alloc(&cost_new, dimension);
+    cost_matrix_alloc(&cost_new, dimension);
     cost_restriction(node_root.edges_illegal, cost, cost_new, dimension);
-    //std::cout << "old :" << std::endl;
-    //matrix_print(cost, dimension);
-    //std::cout << "new :" << std::endl;
-    //matrix_print(cost_new, dimension);
 
-    //std::cout << "aqui1" << std::endl;
-	hungarian_init(&p, cost_new, dimension, dimension, mode); // Carregando o problema
-    matrix_free(&cost_new, dimension);
-    //std::cout << "aqui2" << std::endl;
+	hungarian_init(&p, cost_new, dimension, dimension, mode); 
+    cost_matrix_free(&cost_new, dimension);
 
 	int obj_value = hungarian_solve(&p);
-    //std::cout << "aqui3" << std::endl;
-	//std::cout << "Obj. value: " << obj_value << std::endl;
-	//hungarian_print_assignment(&p);
-    
-    std::vector<std::vector<int>> subtour;
-    subtour_lower_get(subtour, &p, dimension);
-	hungarian_free(&p);
-    //for(int j = 0; j < subtour.size(); j++){
-    //for(int j = 0; j < 1; j++){
-        //exit(0);
-        //std::cout << " aqui4 " << subtour[0] << subtour[1]<< std::endl;
 
-
-        //if(obj_value > cost_optimal) return;
-
-        //int sol_sz = s.size();
-        int j = 0;
+    if(obj_value <= cost_optimal){
         
-        //std::cout << subtour.empty() << std::endl;
-        if(subtour[j].size() >= dimension && obj_value <= cost_optimal){ 
-            /*
-               for(int i = 0; i< dimension+1; i++)
-               std::cout << subtour[i] << " ";
-               std::cout << std::endl;
-             */
-            //std::cout << obj_value << std::endl;
-            subtour[j].push_back(obj_value);
-            s.push_back(subtour[j]);
-            //exit(0);
-            //return;
-        }else if(obj_value <= cost_optimal && !subtour[j].empty()){
-
-            for(int i = 0; i < subtour[j].size() - 1; i++){
+        std::vector<int> subtour;
+        subtour_lower_get(subtour, &p, dimension);
+        hungarian_free(&p);
+        
+        if(subtour.size() >= dimension){ 
+            // valid solution
+            cost_optimal = obj_value;
+            s = subtour;
+        }else {
+            // invalid solution - new searches with distinct restritions 
+            for(int i = 0; i < subtour.size() - 1; i++){
                 struct node_info node_son;
 
                 node_son.edges_illegal = node_root.edges_illegal;
 
                 std::pair<int, int> edge;
-                edge.first = subtour[j][i];
-                edge.second = subtour[j][i+1];
+                edge.first = subtour[i];
+                edge.second = subtour[i+1];
 
                 node_son.edges_illegal.push_back(edge);
                 branch_AND_bound(data, cost, node_son, gen+1);
 
-
             }
         }
-
-        //if(sol_sz != s.size())
-            //break;
-    //}
+    }else
+        hungarian_free(&p);
 
 }
 
-int getOptimalCost(char * instanceName){
+int cost_optimal_get(char * instance_name){
      string path = "benchmark/target_data";
      int value;
      string file;
      ifstream inTSP(path, ios::in);
  
-     //string file;   //They are used into the reader
- 
      inTSP >> file;
-     while ( file.find((string)instanceName+":") != 0) {
+     while ( file.find((string)instance_name+":") != 0) {
          inTSP >> file;
-         //std::cout << file<< std::endl;
      }
+
      int pos = file.find(":") + 1;
      string value_str = file.substr(pos);
-     //if ( file.compare((string)instanceName ) == 0 )  inTSP >> file;
-     //std::cout << pos<< std::endl;
  
      value = stoi(value_str);
  
@@ -289,21 +195,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-    cost_optimal = getOptimalCost(argv[1]);
-    //exit(0);
-    /*
-	hungarian_problem_t p;
-	const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
-	hungarian_init(&p, cost, data->getDimension(), data->getDimension(), mode); // Carregando o problema
-
-	double obj_value = hungarian_solve(&p);
-	std::cout << "Obj. value: " << obj_value << std::endl;
-
-	std::cout << "Assignment" << std::endl;
-	hungarian_print_assignment(&p);
-
-	hungarian_free(&p);
-    */
+    cost_optimal = cost_optimal_get(argv[1]);
 
     struct node_info node_initial;
 
@@ -311,19 +203,18 @@ int main(int argc, char** argv) {
     branch_AND_bound(data, cost, node_initial, 0);
     auto t2 = std::chrono::high_resolution_clock::now();
 
-    for(int i = 0; i< s.size(); i++){
-        for(int j = 0; j< s[i].size()-1; j++)
-            std::cout << s[i][j] << " ";
-
-        std::cout << "Cost :" << s[i][s[i].size()-1] << std::endl;
+    for(int i = 0; i < s.size(); i++){
+        std::cout << s[i] << " ";
     }
+    std::cout << std::endl;
 
+    std::cout << "Cost: " << cost_optimal << std::endl;
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-
 	std::cout << "Execution time: " << exec_time / 10e2  << std::endl;
-	for (int i = 0; i < data->getDimension(); i++) 
+
+    for (int i = 0; i < data->getDimension(); i++) 
         delete [] cost[i];
-	delete [] cost;
+    delete [] cost;
 	delete data;
 
 	return 0;
