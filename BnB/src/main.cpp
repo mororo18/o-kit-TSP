@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 #include <vector>
 #include <algorithm>
 #include <cstring>
@@ -65,7 +66,7 @@ void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, 
         //std::cout << "EDGE SZ :" << edges.size() << std::endl;
         //std::cout << b << std::endl;
         cost_new[a][b] = INFINITE;// DBL_MAX;
-        cost_new[b][a] = INFINITE;//DBL_MAX;
+        //cost_new[b][a] = INFINITE;//DBL_MAX;
     }
 }
 
@@ -123,7 +124,6 @@ void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem
 
         std::cout << std::endl;
     }
-    */
 
     int sz = tour.size();
     for(int i = sz-1; i >= 0 ; i--)
@@ -138,7 +138,9 @@ void subtour_lower_get(std::vector<std::vector<int>> &subtour, hungarian_problem
         return;
     }
 
-    std::partial_sort(tour.begin(), tour.end(),tour.end(), subtour_cmp); 
+    */
+
+    std::sort(tour.begin()/*, tour.begin()+1*/,tour.end(), subtour_cmp); 
     //std::partial_sort(tour.begin(), tour.begin(),tour.begin()+1, subtour_cmp2);
 
     /*
@@ -171,8 +173,13 @@ void matrix_print(int ** ar, int dimension){
 }
 
 std::vector<std::vector<int>> s;
+std::vector<int> bigest;
 
-void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
+inline void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
+
+    //int count;
+    //std::cout << std::endl << gen << "th generation" << std::endl;
+    //count = gen+1;
 
 	hungarian_problem_t p;
 	const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
@@ -199,28 +206,28 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
     std::vector<std::vector<int>> subtour;
     subtour_lower_get(subtour, &p, dimension);
 	hungarian_free(&p);
-    int count;
-    //count = gen+1;
-    //std::cout << count << "th generation" << std::endl;
-    for(int j = 0; j < subtour.size(); j++){
+    //for(int j = 0; j < subtour.size(); j++){
+    //for(int j = 0; j < 1; j++){
         //exit(0);
         //std::cout << " aqui4 " << subtour[0] << subtour[1]<< std::endl;
 
 
         //if(obj_value > cost_optimal) return;
 
-        int sol_sz = s.size();
+        //int sol_sz = s.size();
+        int j = 0;
         
-        //std::cout << subtour[j].size() << std::endl;
-        if(subtour[j].size() == dimension+1){ 
+        //std::cout << subtour.empty() << std::endl;
+        if(subtour[j].size() >= dimension && obj_value <= cost_optimal){ 
             /*
                for(int i = 0; i< dimension+1; i++)
                std::cout << subtour[i] << " ";
                std::cout << std::endl;
              */
-            std::cout << obj_value << std::endl;
+            //std::cout << obj_value << std::endl;
+            subtour[j].push_back(obj_value);
             s.push_back(subtour[j]);
-            exit(0);
+            //exit(0);
             //return;
         }else if(obj_value <= cost_optimal && !subtour[j].empty()){
 
@@ -234,14 +241,15 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
                 edge.second = subtour[j][i+1];
 
                 node_son.edges_illegal.push_back(edge);
-                branch_AND_bound(data, cost, node_son, count);
+                branch_AND_bound(data, cost, node_son, gen+1);
+
 
             }
         }
 
-        if(sol_sz != s.size())
-            break;
-    }
+        //if(sol_sz != s.size())
+            //break;
+    //}
 
 }
 
@@ -298,13 +306,21 @@ int main(int argc, char** argv) {
     */
 
     struct node_info node_initial;
+
+    auto t1 = std::chrono::high_resolution_clock::now();
     branch_AND_bound(data, cost, node_initial, 0);
+    auto t2 = std::chrono::high_resolution_clock::now();
+
     for(int i = 0; i< s.size(); i++){
-        for(int j = 0; j< s[i].size(); i++)
+        for(int j = 0; j< s[i].size()-1; j++)
             std::cout << s[i][j] << " ";
 
-        std::cout << std::endl;
+        std::cout << "Cost :" << s[i][s[i].size()-1] << std::endl;
     }
+
+    auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+	std::cout << "Execution time: " << exec_time / 10e2  << std::endl;
 	for (int i = 0; i < data->getDimension(); i++) 
         delete [] cost[i];
 	delete [] cost;
