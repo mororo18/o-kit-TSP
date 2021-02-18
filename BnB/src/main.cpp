@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <vector>
+#include <list>
 #include <algorithm>
 #include <cstring>
 #include <cfloat>
@@ -9,16 +10,41 @@
 
 struct node_info {
     std::vector<std::pair<int, int>> edges_illegal;
-    std::vector<std::vector<int>> subtour;
-    double bound_lower;
-    int subtour_selected;
-    bool node_fertility;
+    //std::vector<std::vector<int>> subtour;
+    //double bound_lower;
+    //int subtour_selected;
+    //bool node_fertility;
+};
+
+struct node_info2 {
+    std::vector<std::pair<int, int>> edges_illegal;
+    std::vector<int> subtour;
+    bool fertility;
 };
 
 int cost_optimal;
+int s_cost_optimal;
 std::vector<int> s;
 
-void cost_matrix_print(int ** ar, int dimension){
+int cost_optimal_get(char * instance_name){
+    string path = "benchmark/target_data";
+    int value;
+    string file;
+    ifstream inTSP(path, ios::in);
+
+    inTSP >> file; while ( file.find((string)instance_name+":") != 0) {
+        inTSP >> file;
+    }
+
+    int pos = file.find(":") + 1;
+    string value_str = file.substr(pos);
+
+    value = stoi(value_str);
+
+    return value;
+}
+
+void matrix_print(int ** ar, int dimension){
     for(int i = 0; i < dimension; i++){
         for(int j = 0; j < dimension; j++){
             std::cout << ar[i][j] << " ";
@@ -26,10 +52,6 @@ void cost_matrix_print(int ** ar, int dimension){
         }
         std::cout << std::endl;
     }
-}
-
-bool subtour_cmp(std::vector<int> &a, std::vector<int> &b){
-    return (a.size() < b.size());// && a[0] < b[0];
 }
 
 void cost_matrix_alloc(int *** matrix, int dimension){
@@ -64,6 +86,11 @@ void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, 
 
         cost_new[a][b] = INFINITE;
     }
+}
+
+
+bool subtour_cmp(std::vector<int> &a, std::vector<int> &b){
+    return (a.size() < b.size());// && a[0] < b[0];
 }
 
 void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution, int dimension){
@@ -112,12 +139,24 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
         }
     }
 
+    //std::sort(tour.begin(),tour.end(), subtour_cmp); 
     std::partial_sort(tour.begin(), tour.begin()+1,tour.end(), subtour_cmp); 
+
+    /*
+    std::cout << std::endl;
+    for(int i = 0; i < tour.size(); i++){
+        for(int j = 0; j < tour[i].size(); j++)
+            std::cout << tour[i][j] << " ";
+        std::cout << std::endl;
+    }
+    */
 
     subtour = tour[0];
 }
 
-void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int gen){
+// =========  Depth Search Function BEGIN ========= 
+
+void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root, int gen){
 
     hungarian_problem_t p;
     const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
@@ -140,9 +179,10 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
 
         if(subtour.size() >= dimension){ 
             // valid solution
-            cost_optimal = obj_value;
+            s_cost_optimal = obj_value;
             s = subtour;
         }else {
+            int gen_next = gen + 1;
             // invalid solution - new searches with distinct restritions 
             for(int i = 0; i < subtour.size() - 1; i++){
                 struct node_info node_son;
@@ -154,7 +194,7 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
                 edge.second = subtour[i+1];
 
                 node_son.edges_illegal.push_back(edge);
-                branch_AND_bound(data, cost, node_son, gen+1);
+                branch_and_bound_depth(data, cost, node_son, gen_next);
 
             }
         }
@@ -163,24 +203,102 @@ void branch_AND_bound(Data *data, int ** cost, struct node_info node_root, int g
 
 }
 
-int cost_optimal_get(char * instance_name){
-    string path = "benchmark/target_data";
-    int value;
-    string file;
-    ifstream inTSP(path, ios::in);
+// =========  Depth Search Function END ========= 
 
-    inTSP >> file;
-    while ( file.find((string)instance_name+":") != 0) {
-        inTSP >> file;
+
+// =========  Breadth Search Functions BEGIN ========= 
+
+void node_solve(struct node_info2 &node, int **cost, int dimension){
+    
+    const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
+    hungarian_problem_t p;
+
+    int ** cost_new;
+    cost_matrix_alloc(&cost_new, dimension);
+    cost_restriction(node.edges_illegal, cost, cost_new, dimension);
+
+    hungarian_init(&p, cost_new, dimension, dimension, mode); 
+    cost_matrix_free(&cost_new, dimension);
+
+    int cost_node = hungarian_solve(&p);
+
+    if(cost_node <= cost_optimal){
+
+        subtour_lower_get(node.subtour, &p, dimension);
+        hungarian_free(&p);
+
+        if(node.subtour.size() >= dimension){ 
+            // valid solution
+            s_cost_optimal = cost_node;
+            s = node.subtour;
+            node.fertility = false;
+        }else   
+            node.fertility = true;
+
+    }else{
+        hungarian_free(&p);
+        node.fertility = false;
+    }
+}
+
+void node_procreate(std::list<struct node_info2> & recipient, struct node_info2 & node_parent){
+    for(int i = 0; i < node_parent.subtour.size() - 1; i++){
+        struct node_info2 node_son;
+
+        node_son.edges_illegal = node_parent.edges_illegal;
+
+        std::pair<int, int> edge;
+        edge.first = node_parent.subtour[i];
+        edge.second = node_parent.subtour[i+1];
+
+        node_son.edges_illegal.push_back(edge);
+
+        recipient.push_back(node_son);
+    }
+}
+
+void branch_and_bound_breadth(Data * data, int ** cost){
+
+    const int dimension = data->getDimension();
+    struct node_info2 node_root;
+    std::list<struct node_info2> layer_A;
+    std::list<struct node_info2> layer_B;
+
+    layer_A.push_back(node_root);
+
+    while(!layer_A.empty() || !layer_B.empty()){
+
+        for(int i = 0; i < layer_A.size(); i++){
+
+            node_solve(layer_A.front(), cost, dimension);
+
+            if(layer_A.front().fertility == true)
+                // generate the sons in the other layer B
+                node_procreate(layer_B, layer_A.front());
+            
+            // kill/erase the node
+            layer_A.pop_front();
+            
+        }
+
+        for(int i = 0; i < layer_B.size(); i++){
+
+            node_solve(layer_B.front(), cost, dimension);
+
+            if(layer_B.front().fertility == true)
+                // generate the sons in the layer A
+                node_procreate(layer_A, layer_B.front());
+            
+            // kill/erase the node
+            layer_B.pop_front();
+            
+        }
+
     }
 
-    int pos = file.find(":") + 1;
-    string value_str = file.substr(pos);
-
-    value = stoi(value_str);
-
-    return value;
 }
+
+// =========  Breadth Search Functions END ========= 
 
 int main(int argc, char** argv) {
 
@@ -200,17 +318,21 @@ int main(int argc, char** argv) {
     struct node_info node_initial;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    branch_AND_bound(data, cost, node_initial, 0);
+    branch_and_bound_breadth(data, cost);
+    //branch_and_bound_depth(data, cost, node_initial, 0);
     auto t2 = std::chrono::high_resolution_clock::now();
 
+
+    /*
     for(int i = 0; i < s.size(); i++){
         std::cout << s[i] << " ";
     }
     std::cout << std::endl;
+    */
 
-    std::cout << "Cost: " << cost_optimal << std::endl;
+    std::cout << "COST: " << s_cost_optimal << std::endl;
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "Execution time: " << exec_time / 10e2  << std::endl;
+    std::cout << "TIME: " << exec_time / 10e2  << std::endl;
 
     for (int i = 0; i < data->getDimension(); i++) 
         delete [] cost[i];
