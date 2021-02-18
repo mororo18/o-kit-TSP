@@ -220,16 +220,16 @@ void node_solve(struct node_info2 &node, int **cost, int dimension){
     hungarian_init(&p, cost_new, dimension, dimension, mode); 
     cost_matrix_free(&cost_new, dimension);
 
-    int cost_node = hungarian_solve(&p);
+    int node_cost = hungarian_solve(&p);
 
-    if(cost_node <= cost_optimal){
+    if(node_cost <= cost_optimal){
 
         subtour_lower_get(node.subtour, &p, dimension);
         hungarian_free(&p);
 
         if(node.subtour.size() >= dimension){ 
             // valid solution
-            s_cost_optimal = cost_node;
+            s_cost_optimal = node_cost;
             s = node.subtour;
             node.fertility = false;
         }else   
@@ -252,7 +252,6 @@ void node_procreate(std::list<struct node_info2> & recipient, struct node_info2 
         edge.second = node_parent.subtour[i+1];
 
         node_son.edges_illegal.push_back(edge);
-
         recipient.push_back(node_son);
     }
 }
@@ -273,7 +272,7 @@ void branch_and_bound_breadth(Data * data, int ** cost){
             node_solve(layer_A.front(), cost, dimension);
 
             if(layer_A.front().fertility == true)
-                // generate the sons in the other layer B
+                // generate the sons in the layer B
                 node_procreate(layer_B, layer_A.front());
             
             // kill/erase the node
