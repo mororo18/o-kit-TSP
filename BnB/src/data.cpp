@@ -7,15 +7,19 @@ Data::Data( int qtParam, char * instance ):
     yCoord(NULL),
     distMatrix(NULL){
 
-        if ( qtParam < 2 )  {
-            cout << "Missing parameters\n";
-            cout << " ./exeLaRP [Instance]"  << endl;
+        if ( qtParam < 3 )  {
+            cout << "Missing parameters!\n";
+            cout << "Usage:";
+            cout << " ./tsp [instance] [search mode]"  << endl;
+            cout << "Modes:\n  --breadth\n  --depth\n";
             exit( 1 );        
         }
 
-        if ( qtParam > 2 )    {
+        if ( qtParam > 3 )    {
             cout << "Too many parameters\n";
-            cout << " ./exeLaRP [Instance]"  << endl;
+            cout << "Usage:";
+            cout << " ./tsp [instance] [search mode]"  << endl;
+            cout << "Modes:\n  --breadth\n  --depth\n";
             exit( 1 );
         }
 

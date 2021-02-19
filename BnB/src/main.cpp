@@ -301,6 +301,9 @@ void branch_and_bound_breadth(Data * data, int ** cost){
 
 int main(int argc, char** argv) {
 
+    const char * breadth_flag = "--breadth";
+    const char * depth_flag = "--depth";
+
     Data * data = new Data(argc, argv[1]);
     data->readData();
 
@@ -317,8 +320,16 @@ int main(int argc, char** argv) {
     struct node_info node_initial;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    branch_and_bound_breadth(data, cost);
-    //branch_and_bound_depth(data, cost, node_initial, 0);
+
+    if(!strcmp(breadth_flag, argv[2]))
+        branch_and_bound_breadth(data, cost);
+    else if(!strcmp(depth_flag, argv[2]))
+        branch_and_bound_depth(data, cost, node_initial, 0);
+    else{
+        std::cout << "[!!] Error: Search Mode not identified\n" << std::endl;
+        exit(-1);
+    }
+
     auto t2 = std::chrono::high_resolution_clock::now();
 
 

@@ -4,19 +4,27 @@ usage()
 {
     echo "Usage: Range from ARG1 to ARG2"
     echo " "
-    echo "      ./run.sh -s [ARG1] -l [ARG2] "
+    echo "      ./run.sh -s [ARG1] -l [ARG2] [SEARCH MODE] "
+    echo " "
+    echo "  Range flags:"
     echo " "
     echo "      -l      The larger instance size. "
     echo "      -s      The smaller instance size. "
     echo "      -t      Times that each instance will run. "
     echo " "
+    echo " Mode options:"
+    echo " "
+    echo "      -b      Breadth Search"
+    echo "      -d      Depth Search"
+    echo " "
 }
 
 larger=0
 smaller=0
+mode=-1
 t=1
 
-while getopts "l: s: t:" opt; do
+while getopts "bdl: s: t:" opt; do
     case ${opt} in
 	l)
 	    larger=$OPTARG
@@ -27,6 +35,12 @@ while getopts "l: s: t:" opt; do
 	t)
 	    t=$OPTARG
 	    ;;
+	b)
+	    mode=0
+	    ;;
+	d)
+	    mode=1
+	    ;;
 	*)
 	    usage
 	    exit 1
@@ -34,10 +48,26 @@ while getopts "l: s: t:" opt; do
     esac
 done
 
+if [[ $mode -eq -1 ]]
+then
+    usage
+    exit 1
+fi
+
 if [[ $larger -eq 0  && $smaller -eq 0 ]]
 then
     usage
     exit 1
+fi
+
+if [[ $mode -eq 0 ]]
+then
+    mode="--breadth"
+fi
+
+if [[ $mode -eq 1 ]]
+then
+    mode="--depth"
 fi
 
 shift $((OPTIND-1))
@@ -69,7 +99,7 @@ for instance in instances/*; do
 	echo "Instance $k of $files" 
 
 	for i in $(seq 1 $t); do
-		./tsp ${instance} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
+		./tsp ${instance} ${mode} | grep 'COST\|TIME' | awk "{print $1}" >> ${FILENAME}
 	done
 
 	k=$(($k + 1))
