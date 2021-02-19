@@ -208,7 +208,7 @@ void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root,
 
 // =========  Breadth Search Functions BEGIN ========= 
 
-void node_solve(struct node_info2 &node, int **cost, int dimension){
+inline void node_solve(struct node_info2 &node, int **cost, int dimension){
     
     const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
     hungarian_problem_t p;
@@ -241,7 +241,7 @@ void node_solve(struct node_info2 &node, int **cost, int dimension){
     }
 }
 
-void node_procreate(std::list<struct node_info2> & recipient, struct node_info2 & node_parent){
+inline void node_procreate(std::list<struct node_info2> & recipient, struct node_info2 & node_parent){
     for(int i = 0; i < node_parent.subtour.size() - 1; i++){
         struct node_info2 node_son;
 
