@@ -23,7 +23,7 @@ struct node_info2 {
 };
 
 int cost_optimal;
-int s_cost_optimal;
+int s_cost_optimal = INFINITE;
 std::vector<int> s;
 
 int cost_optimal_get(char * instance_name){
@@ -171,7 +171,7 @@ void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root,
 
     int obj_value = hungarian_solve(&p);
 
-    if(obj_value <= cost_optimal){
+    if(obj_value <= s_cost_optimal){
 
         std::vector<int> subtour;
         subtour_lower_get(subtour, &p, dimension);
@@ -222,7 +222,7 @@ inline void node_solve(struct node_info2 &node, int **cost, int dimension){
 
     int node_cost = hungarian_solve(&p);
 
-    if(node_cost <= cost_optimal){
+    if(node_cost <= s_cost_optimal){
 
         subtour_lower_get(node.subtour, &p, dimension);
         hungarian_free(&p);
@@ -267,7 +267,7 @@ void branch_and_bound_breadth(Data * data, int ** cost){
 
     while(!layer_A.empty() || !layer_B.empty()){
 
-        for(int i = 0; i < layer_A.size(); i++){
+        while(!layer_A.empty()){
 
             node_solve(layer_A.front(), cost, dimension);
 
@@ -280,7 +280,7 @@ void branch_and_bound_breadth(Data * data, int ** cost){
             
         }
 
-        for(int i = 0; i < layer_B.size(); i++){
+        while(!layer_B.empty()){
 
             node_solve(layer_B.front(), cost, dimension);
 
@@ -303,6 +303,7 @@ int main(int argc, char** argv) {
 
     const char * breadth_flag = "--breadth";
     const char * depth_flag = "--depth";
+    const char * bound_opt = "-o";
 
     Data * data = new Data(argc, argv[1]);
     data->readData();
@@ -316,6 +317,9 @@ int main(int argc, char** argv) {
     }
 
     cost_optimal = cost_optimal_get(argv[1]);
+
+    if(argc == 4 && !strcmp(bound_opt, argv[3]))
+        s_cost_optimal = cost_optimal;
 
     struct node_info node_initial;
 
@@ -340,7 +344,11 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
     */
 
-    std::cout << "COST: " << s_cost_optimal << std::endl;
+    if(!s.empty())
+        std::cout << "COST: " << s_cost_optimal << std::endl;
+    else
+        std::cout << "Couldnt find a solution." << std::endl;
+
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::cout << "TIME: " << exec_time / 10e2  << std::endl;
 

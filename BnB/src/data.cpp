@@ -11,14 +11,16 @@ Data::Data( int qtParam, char * instance ):
             cout << "Missing parameters!\n";
             cout << "Usage:";
             cout << " ./tsp [instance] [search mode]"  << endl;
+            cout << "Option:\n  -o\t Enable to use the known optimal result as upper bound" << endl;
             cout << "Modes:\n  --breadth\n  --depth\n";
             exit( 1 );        
         }
 
-        if ( qtParam > 3 )    {
+        if ( qtParam > 4 )    {
             cout << "Too many parameters\n";
             cout << "Usage:";
             cout << " ./tsp [instance] [search mode]"  << endl;
+            cout << "Option:\n  -o\t Enable to use the known optimal result as upper bound" << endl;
             cout << "Modes:\n  --breadth\n  --depth\n";
             exit( 1 );
         }
