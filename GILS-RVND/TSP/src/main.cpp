@@ -32,9 +32,9 @@ struct alignas(4) insertion_info {
 
 struct sub_info{
     std::vector<int> seq;
-    short prev;
-    short next;
-    short pos_next;
+    int prev;
+    int next;
+    int pos_next;
 };
 
 double **c;
@@ -43,8 +43,7 @@ int dimension;
 std::chrono::_V2::system_clock::time_point t3;
 std::chrono::_V2::system_clock::time_point t4;
 
-
-volatile bool state;
+bool state;
 bool flag;
 int sum_t = 0;
 long swap_t  = 0;
@@ -55,6 +54,9 @@ long opt3_t = 0;
 long construct_t = 0;
 long search_t; 
 long search_t_average = 0;
+
+
+//-----  to measure the execution time BEGIN  -----
 
 void after(){
     if(!flag)
@@ -94,6 +96,8 @@ void before(int a){
     }
 }
 
+//-----  to measure the execution time END  -----
+
 bool cost_compare(const insertion_info &a, const insertion_info &b){
     return a.cost < b.cost - DBL_EPSILON;
 }
@@ -105,8 +109,7 @@ void candidates_load(std::vector<int> &cand, int dim){
 }	
 
 inline void binary_search(std::vector<int> &vec, int node, short from, short to){
-    //short middle = (from + to) / 2; 
-    #define MIDDLE (from + to) / 2
+    #define MIDDLE ((from + to) / 2)
 
     if(vec[MIDDLE] == node){
         vec.erase(vec.begin() + MIDDLE);
@@ -155,26 +158,14 @@ void construct(std::vector<int> &s, const double alpha){
 
             }
         }
-        //printf("valor de l  =  %d\n", l);
-
 
         int node_rand_range = ceil(alpha * insertion_cost.size());
         int node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
 
-        short node_rand = insertion_cost[node_rand_index].node_new;
-        short edge = insertion_cost[node_rand_index].edge_removed;
+        int node_rand = insertion_cost[node_rand_index].node_new;
+        int edge = insertion_cost[node_rand_index].edge_removed;
         s.insert(s.begin() + edge + 1, node_rand); 
-        //printf("inserted node: %d\n", node_rand);
-
-        /*
-        for(int i = 0; i < candidates.size(); ++i){
-            if(candidates[i] ==  node_rand){
-                candidates.erase(candidates.begin() + i);
-                break;
-            }
-        }
-        */
 
         binary_search(candidates, node_rand, 0, candidates.size() );
 
@@ -213,24 +204,12 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 #define INT_SZ 4
 
 inline void neighbor_swap_better(std::vector<int> &s){
-    alignas(DBL_SZ) double dif;
-    alignas(DBL_SZ) double dif1;
-    alignas(DBL_SZ) double dif3;
-    alignas(DBL_SZ) double dif_lower;
-    alignas(INT_SZ) int i;
-    alignas(INT_SZ) int j;
-    alignas(INT_SZ) int e;
-    alignas(INT_SZ) int b;
-    alignas(INT_SZ) int d;
-    alignas(INT_SZ) int a;
-    alignas(INT_SZ) int o;
-    alignas(INT_SZ) int p;
-    alignas(INT_SZ) int q;
+    alignas(DBL_SZ) double dif, dif1, dif3, dif_lower;
+    alignas(INT_SZ) int i, j, e, b, d, a, o, p, q;
     alignas(INT_SZ) int dim = dimension - 2;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
-    alignas(1) bool t = 1;
-    alignas(1) bool l;
+    alignas(1) bool l, t = 1;
 
     for(i = 1; i < dimension - 1; ++i){
         o = s[i];
@@ -276,13 +255,8 @@ inline void neighbor_swap_better(std::vector<int> &s){
 }
 
 inline void neighbor_two_opt_better(std::vector<int> &s){
-    alignas(DBL_SZ) double dif;
-    alignas(DBL_SZ) double dif1;
-    alignas(DBL_SZ) double dif_lower;
-    alignas(INT_SZ) int b;
-    alignas(INT_SZ) int a;
-    alignas(INT_SZ) int j;
-    alignas(INT_SZ) int i;
+    alignas(DBL_SZ) double dif, dif1, dif_lower;
+    alignas(INT_SZ) int b, a, j, i;
     alignas(INT_SZ) int i_best;
     alignas(INT_SZ) int j_best;
     alignas(1) bool t = 1;
@@ -313,20 +287,9 @@ inline void neighbor_two_opt_better(std::vector<int> &s){
 
 
 inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
-    alignas(DBL_SZ) double dif;
-    alignas(DBL_SZ) double dif1;
-    alignas(DBL_SZ) double dif_lower;
-    alignas(INT_SZ) int i;
-    alignas(INT_SZ) int j;
-    alignas(INT_SZ) int k;
-    alignas(INT_SZ) int g;
-    alignas(INT_SZ) int b;
-    alignas(INT_SZ) int a;
-    alignas(INT_SZ) int o;
-    alignas(INT_SZ) int e;
-    alignas(INT_SZ) int i_best;
-    alignas(INT_SZ) int j_best;
-    alignas(INT_SZ) int pos_new;
+    alignas(DBL_SZ) double dif, dif1, dif_lower;
+    alignas(INT_SZ) int i, j, k, g, b, a, o, e;
+    alignas(INT_SZ) int i_best, j_best, pos_new;
     alignas(INT_SZ) int k_lim = dimension - sz - 1;
     alignas(1) bool l;
     alignas(1) bool t = 1;
@@ -342,23 +305,6 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
 
         //k -> edges 
         for(k = 0; k < b; ++k){
-
-
-            /*
-            if(l && k == b){
-                k = k + sz + 1;
-                l = 0;
-            }
-            */
-
-            /*
-            moving the 2nd and the 3rd elements to the 6th position,
-            for example, is the same as moving the 4th and the 5th 
-            elements to	the 2nd position.
-             */
-
-            //if(k == a)
-                //continue;
             
             g = k + 1;
 
@@ -375,23 +321,6 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, int sz){
         }
 
         for(k = i + sz; k < k_lim; ++k){
-
-
-            /*
-            if(l && k == b){
-                k = k + sz + 1;
-                l = 0;
-            }
-            */
-
-            /*
-            moving the 2nd and the 3rd elements to the 6th position,
-            for example, is the same as moving the 4th and the 5th 
-            elements to	the 2nd position.
-             */
-
-            //if(k == a)
-                //continue;
             
             g = k + 1;
 
@@ -474,8 +403,6 @@ void RVND(std::vector<int> &s){
             neighbd_list_repopulate(neighbd_list);
         else
             neighbd_list.erase(neighbd_list.begin() + neighbd_rand_index);
-        
-
     }
 }
 
@@ -510,14 +437,10 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     sub_seq2->seq.insert(sub_seq2->seq.begin(), sl.begin() + second_pos, sl.begin() + second_pos + second_size);
 
     if(first_pos > second_pos){
-        // elimina sub_seq1
         s.erase(s.begin() + first_pos, s.begin() + first_pos + first_size);
-        //elimina sub_seq2	
         s.erase(s.begin() + second_pos, s.begin() + second_pos + second_size);
     }else{
-        //elimina sub_seq2	
         s.erase(s.begin() + second_pos, s.begin() + second_pos + second_size);
-        // elimina sub_seq1
         s.erase(s.begin() + first_pos, s.begin() + first_pos + first_size);
     }
 
@@ -532,7 +455,6 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
         }
     }
 
-    //dimension = s.size() - 1;
     while(true){
         int pos = (unsigned)rand() % dimension + 1;
         if(s[pos-1] == sub_seq2->prev || s[pos] == sub_seq2->next){
@@ -594,7 +516,6 @@ void GILS_RVND(int Imax, int Iils){
                 sl.clear();
                 sl = s;
                 cost_rvnd_best = cost_rvnd_current - DBL_EPSILON;
-                //cost_calc(sl, &cost_rvnd_best);
                 Iterils = 0;
             }
             perturb(sl, s);

@@ -118,7 +118,7 @@ void candidates_load(std::vector<int> &cand, int dim){
 }	
 
 inline void binary_search(std::vector<int> &vec, int node, short from, short to){
-    #define MIDDLE (from + to) / 2
+    #define MIDDLE ((from + to) / 2)
 
     if(vec[MIDDLE] == node){
         vec.erase(vec.begin() + MIDDLE);
@@ -138,19 +138,6 @@ void construct(std::vector<int> &s, const double alpha){
     candidates.reserve(dimension);
     candidates_load(candidates, dimension);
 
-    //int subtour_inicial = 3;
-
-    /*
-    for(int i = subtour_inicial; --i;){
-        
-        int node_rand_index = (unsigned)rand() % candidates.size(); 
-        int node_rand = candidates[node_rand_index];
-
-        s.insert(s.begin() + 1, node_rand);
-        candidates.erase(candidates.begin() + node_rand_index);
-    }
-    */
-
     int r = 1;
 
     while(!candidates.empty()){
@@ -161,8 +148,6 @@ void construct(std::vector<int> &s, const double alpha){
             insertion_cost[i].cost = c[r][candidates[i]];  
             insertion_cost[i].node_new = candidates[i];
         }
-        //printf("valor de l  =  %d\n", l);
-
 
         int node_rand_range = alpha * insertion_cost.size() + 1;
         int node_rand_index = (unsigned)rand() % node_rand_range;
@@ -173,16 +158,6 @@ void construct(std::vector<int> &s, const double alpha){
         r = node_rand;
 
         binary_search(candidates, node_rand, 0, candidates.size() );
-        /*
-        for(int i = 0; i < candidates.size(); ++i){
-            if(candidates[i] ==  node_rand){
-                candidates.erase(candidates.begin() + i);
-                break;
-            }
-        }
-        */
-
-
     }
 }	
 
