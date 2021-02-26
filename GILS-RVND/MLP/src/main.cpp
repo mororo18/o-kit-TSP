@@ -188,7 +188,7 @@ inline void reinsert(std::vector<int> &vec, int i, int j, int pos){
 
 }
 
-inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
+inline void subseq_info_load(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s){
     alignas(INT_SZ) int i, j, a, k;
     alignas(INT_SZ) int dim = dimension+1;
     alignas(1) bool t;
@@ -209,7 +209,7 @@ inline void load_subseq_info(std::vector<std::vector<struct subseq>> &seq, std::
     }
 }
 
-inline void load_subseq_info2(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int index = 0){
+inline void subseq_info_load2(std::vector<std::vector<struct subseq>> &seq, std::vector<int> &s, int index = 0){
     alignas(INT_SZ) int i, j, a, k;
     alignas(INT_SZ) int dim = dimension+1;
     alignas(INT_SZ) int from = index;
@@ -289,7 +289,7 @@ inline void neighbor_swap_better(std::vector<int> &s, std::vector<std::vector<st
 
     if(cost_lower < seq[0][dimension].C - DBL_EPSILON){
         swap_2(s, i_best, j_best);
-        load_subseq_info2(seq, s, i_best);
+        subseq_info_load2(seq, s, i_best);
         state = true;
     }
 }
@@ -330,7 +330,7 @@ inline void neighbor_two_opt_better(std::vector<int> &s, std::vector<std::vector
 
     if(cost_lower < seq[0][dimension].C - DBL_EPSILON){
         two_opt(s, i_best, j_best);
-        load_subseq_info2(seq, s, i_best);
+        subseq_info_load2(seq, s, i_best);
         state = true;
     }
 }
@@ -402,7 +402,7 @@ inline void neighbor_reinsertion_better(std::vector<int> &s, std::vector<std::ve
     if(cost_lower < seq[0][dimension].C - DBL_EPSILON){
         reinsert(s, i_best, j_best + 1, pos_new + 1);
         int ar[] = {pos_new+1, i_best};
-        load_subseq_info2(seq, s, ar[l]);
+        subseq_info_load2(seq, s, ar[l]);
         state = true;
     }
 
@@ -568,7 +568,7 @@ void GILS_RVND(int Imax, int Iils){
         sl = s;
 
         printf("\t[+] Looking for the best Neighbor..\n");
-        load_subseq_info(subseq_info, s);
+        subseq_info_load(subseq_info, s);
         cost_rvnd_best = subseq_info[0][dimension].C - DBL_EPSILON;
 
         int Iterils = 0;
@@ -582,11 +582,11 @@ void GILS_RVND(int Imax, int Iils){
                 Iterils = 0;
             }
             perturb(sl, s);
-            load_subseq_info(subseq_info, s);
+            subseq_info_load(subseq_info, s);
             Iterils++;
         }
 
-        load_subseq_info(subseq_info, sl);
+        subseq_info_load(subseq_info, sl);
         cost_sl = subseq_info[0][dimension].C - DBL_EPSILON;
         if(cost_sl < cost_final - DBL_EPSILON || i == 0){
             s_final.clear();
