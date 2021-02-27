@@ -7,7 +7,6 @@
 #include <cfloat>
 #include "data.h"
 #include "hungarian.h"
-#include "asmlib/asmlib.h"
 
 struct node_info {
     std::vector<std::pair<int, int>> edges_illegal;
