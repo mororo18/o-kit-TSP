@@ -62,13 +62,13 @@ long construct_t = 0;
 long search_t; 
 long search_t_average = 0;
 
-void after(){
+void before(){
     if(!flag)
         return;
     t3 = high_resolution_clock::now();
 }
 
-void before(int a){
+void after(int a){
     if(!flag)
         return;
     t4 = high_resolution_clock::now();
@@ -430,29 +430,29 @@ void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
 
         switch(neighbd_rand){
             case REINSERTION:
-                //after();
+                //before();
                 neighbor_reinsertion_better(s, seq, REINSERTION);
-                //before(REINSERTION);
+                //after(REINSERTION);
                 break;				
             case OR_OPT2:
-                //after();
+                //before();
                 neighbor_reinsertion_better(s, seq, OR_OPT2);
-                //before(OR_OPT2);
+                //after(OR_OPT2);
                 break;				
             case OR_OPT3:
-                //after();
+                //before();
                 neighbor_reinsertion_better(s, seq, OR_OPT3);
-                //before(OR_OPT3);
+                //after(OR_OPT3);
                 break;				
             case SWAP:
-                //after();
+                //before();
                 neighbor_swap_better(s, seq);
-                //before(SWAP);
+                //after(SWAP);
                 break;
             case TWO_OPT:
-                //after();
+                //before();
                 neighbor_two_opt_better(s, seq);
-                //before(TWO_OPT);
+                //after(TWO_OPT);
                 break;				
         }
 
@@ -556,15 +556,15 @@ void GILS_RVND(int Imax, int Iils){
     double cost_final;
 
     for(int i = 0; i < Imax; ++i){
-        after();
+        before();
         int aux = (unsigned)rand() % TABLE_SZ;
         double alpha = R_table(aux);
 
         printf("[+] Search %d\n", i+1);
         printf("\t[+] Constructing..\n");	
-        //after();
+        //before();
         construct(s, alpha);
-        //before(6);
+        //after(6);
         sl = s;
 
         printf("\t[+] Looking for the best Neighbor..\n");
@@ -594,7 +594,7 @@ void GILS_RVND(int Imax, int Iils){
             cost_final = cost_sl;
         }
 
-        before(7);
+        after(7);
 
         std::cout << "\tCurrent best cost: "<< cost_final << std::endl;
         std::cout << "\tCurrent search time: "<< search_t / 10e5<< std::endl;
