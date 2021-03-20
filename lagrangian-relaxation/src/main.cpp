@@ -320,11 +320,22 @@ int main(int argc, char** argv) {
 
     Kruskal tree(cost);
 
+
+    std::cout << "Cost: " << tree.MST(dimension) << std::endl;
+    vii arvore = tree.getEdges();
+
+    for(int i =0; i < arvore.size(); i++){
+        std::cout << arvore[i].first << " " << arvore[i].second << "| ";//<< std::endl;
+    }
+    std::cout << std::endl;
+
+/*
     for (int i = 0; i < data->getDimension(); i++) {
         for(int j = 0; j < dimension; j++)
             std::cout << cost[i][j] << " ";
         std::cout << std::endl;
     }
+    */
 
 /*
     cost_optimal = cost_optimal_get(argv[1]);

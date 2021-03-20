@@ -6,6 +6,7 @@
 #include <vector>
 #include <queue>
 #include <utility>
+#include <algorithm>
 
 using namespace std;
 
@@ -23,6 +24,7 @@ class Kruskal{
 
     private:
         priority_queue <pair<double,ii> > graph;
+        vector <pair<double, ii> >costs;
         vector <int> pset;
         vii edges;
 
@@ -30,6 +32,7 @@ class Kruskal{
         int findSet(int i);
         void unionSet(int i, int j);
         bool isSameSet(int i, int j);
+        bool compare(const std::pair<double,ii> &left, const std::pair<double,ii> &right);
 };
 
 #endif
