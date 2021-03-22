@@ -45,10 +45,10 @@ int cost_optimal_get(char * instance_name){
     return value;
 }
 
-void matrix_print(int ** ar, int dimension){
-    for(int i = 0; i < dimension; i++){
-        for(int j = 0; j < dimension; j++){
-            std::cout << ar[i][j] << " ";
+void matrix_print(const Matrix &cost){
+    for(int i = 0; i < cost.size(); i++){
+        for(int j = 0; j < cost.size(); j++){
+            std::cout << cost[i][j] << " ";
 
         }
         std::cout << std::endl;
@@ -75,18 +75,11 @@ inline void cost_matrix_free(int *** ptr, int dimension){
     *ptr = NULL;
 }
 
-void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, int ** cost_new, int dimension){
+void cost_restriction(Matrix &cost, ii edge_illegal){
     // cpy the old to the new matrix of costs
-    for(int i = 0; i < dimension; i++)
-        memcpy(cost_new[i], cost_old[i], dimension*sizeof(int));  
-
-    // apply the restrictions
-    for(int i = 0; i < edges.size(); i++){
-        int a = edges[i].first - 1;
-        int b = edges[i].second - 1;
-
-        cost_new[a][b] = INFINITE;
-    }
+    int a = edge_illegal.first;
+    int b = edge_illegal.second;
+    cost[a][b] = INFINITE;
 }
 
 
@@ -155,52 +148,104 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
     subtour = tour[0];
 }
 
+void vector_print(const std::vector<int> &vec, std::string name){
+
+    std::cout << "Vector " << name << " :  ";
+    for(int i = 0; i < vec.size(); i++){
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+inline ii array_item_max(int * arr, int size){
+    int max = arr[0];
+    int index;
+    ii node_and_degree;
+    for(int i = 1; i < size; i++){
+        if(arr[i] > max){
+            max = arr[i];
+            index = i;
+        }
+    }
+    node_and_degree.first = index;
+    node_and_degree.second = max;
+    return node_and_degree;
+}
+
+ii tree_node_degree_max_find(vii edge, int dimension){
+    int node_degree[dimension] = {0};
+    ii edge_current;
+
+    for(int i = 0; i < edge.size(); i++){
+        edge_current = edge[i];
+        node_degree[edge_current.first]++;
+        node_degree[edge_current.second]++;
+    }
+
+    return array_item_max(node_degree, dimension);
+}
+
+std::vector<int> tree_node_children(vii edges, int parent){
+    std::vector<int> children;
+    for(int i = 0; i < edges.size(); i++){
+        if(edges[i].first == parent)
+            children.push_back(edges[i].second);
+        if(edges[i].second == parent)
+            children.push_back(edges[i].first);
+    }
+
+    return children;
+}
+
 // =========  Depth Search Function BEGIN ========= 
 
-void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root, int gen){
+void branch_and_bound_depth(Matrix cost, ii restriction, int gen){
+    std::cout << "Gen   " << gen << "\n";
 
-    hungarian_problem_t p;
-    const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
-    const int dimension = data->getDimension();
+    cost_restriction(cost, restriction);
+    std::cout << "after restrsiction   "  << "\n";
+    Kruskal tree(cost);
+    std::cout << "after treee   "  << "\n";
+    const int dimension = cost.size();
 
-    int ** cost_new;
-    cost_matrix_alloc(&cost_new, dimension);
-    cost_restriction(node_root.edges_illegal, cost, cost_new, dimension);
+    int obj_value = tree.MST(dimension);
+    std::cout << "after solving   "  << "\n";
 
-    hungarian_init(&p, cost_new, dimension, dimension, mode); 
-    cost_matrix_free(&cost_new, dimension);
-
-    int obj_value = hungarian_solve(&p);
-
+    std::cout << "current cost   " << obj_value << "\n";
     if(obj_value <= s_cost_optimal){
 
-        std::vector<int> subtour;
-        subtour_lower_get(subtour, &p, dimension);
-        hungarian_free(&p);
-
-        if(subtour.size() >= dimension){ 
+        
+        ii tree_node_degree_max = tree_node_degree_max_find(tree.getEdges(), dimension);
+        std::cout << "degree max   " <<  tree_node_degree_max.second << "\n";
+        if(tree_node_degree_max.second == 2){ 
+        std::cout << "degree max  yes  " << "\n";
             // valid solution
             s_cost_optimal = obj_value;
-            s = subtour;
         }else {
+            std::cout << "degree max noo   " << "\n";
+            int parent = tree_node_degree_max.first;
+            std::vector<int> node_children = tree_node_children(tree.getEdges(), parent);
+
+            // Debug ;;
+            std::cout << "Pai :" << parent << "\nGrau: " << tree_node_degree_max.second << std::endl;
+            vector_print(node_children, "filhos");
+
+            matrix_print(cost);
+
+            //exit(0);
+            if(gen == 10)
+                exit(0);
+
             int gen_next = gen + 1;
             // invalid solution - new searches with distinct restritions 
-            for(int i = 0; i < subtour.size() - 1; i++){
-                struct node_info node_son;
-
-                node_son.edges_illegal = node_root.edges_illegal;
-
-                std::pair<int, int> edge;
-                edge.first = subtour[i];
-                edge.second = subtour[i+1];
-
-                node_son.edges_illegal.push_back(edge);
-                branch_and_bound_depth(data, cost, node_son, gen_next);
-
+            for(int i = 0; i < node_children.size(); i++){
+                ii edge_illegal;
+                edge_illegal.first = parent;
+                edge_illegal.second = node_children[i];
+                branch_and_bound_depth(cost, edge_illegal, gen_next);
             }
         }
-    }else
-        hungarian_free(&p);
+    }//else
 
 }
 
@@ -208,7 +253,7 @@ void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root,
 
 
 // =========  Breadth Search Functions BEGIN ========= 
-
+/*
 inline void node_solve(struct node_info2 &node, int **cost, int dimension){
     
     const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
@@ -300,6 +345,11 @@ void branch_and_bound_breadth(Data * data, int ** cost){
 
 // =========  Breadth Search Functions END ========= 
 
+
+*/
+
+
+
 int main(int argc, char** argv) {
 
     const char * breadth_flag = "--breadth";
@@ -325,9 +375,14 @@ int main(int argc, char** argv) {
     vii arvore = tree.getEdges();
 
     for(int i =0; i < arvore.size(); i++){
-        std::cout << arvore[i].first << " " << arvore[i].second << "| ";//<< std::endl;
+        std::cout << arvore[i].first << " " << arvore[i].second << std::endl;
     }
     std::cout << std::endl;
+
+    ii restriction;
+    branch_and_bound_depth(cost, restriction, 0);
+
+    std::cout << "COST: " << s_cost_optimal << std::endl;
 
 /*
     for (int i = 0; i < data->getDimension(); i++) {

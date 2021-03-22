@@ -32,7 +32,6 @@ class Kruskal{
         int findSet(int i);
         void unionSet(int i, int j);
         bool isSameSet(int i, int j);
-        bool compare(const std::pair<double,ii> &left, const std::pair<double,ii> &right);
 };
 
 #endif

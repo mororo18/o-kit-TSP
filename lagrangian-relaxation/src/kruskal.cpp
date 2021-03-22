@@ -3,6 +3,7 @@
 Kruskal::Kruskal(Matrix dist){
     for(int i = 0; i < dist.size(); i++){
         costs.push_back( make_pair(-dist[0][i], make_pair(0, i)) );
+        std::cout << "indice " << i << std::endl;
     }
 
     for(int i = 1; i < dist.size(); ++i){
@@ -35,16 +36,8 @@ vii Kruskal::getEdges(){
     return edges;
 }
 
-bool Kruskal::compare(const std::pair<double,ii> &left, const std::pair<double,ii> &right) {
-    return left.first < right.first;
-}
-
 double Kruskal::MST(int nodes){
     initDisjoint(nodes);
-    //yvector <pair<double, ii> >costs;
-    int one;
-    int two;
-
     double cost = 0;
 
     while(!graph.empty()){
@@ -61,8 +54,9 @@ double Kruskal::MST(int nodes){
 
 
     std::partial_sort(costs.begin() , costs.begin() + 2 ,costs.end(), 
-            [](const std::pair<double,ii> &left, const std::pair<double,ii> &right) 
-            { return -left.first < -right.first;}
+        [](const std::pair<double,ii> &left, const std::pair<double,ii> &right) { 
+            return -left.first < -right.first;
+        }
     );
     /*
     for(int i = 0; i < costs.size(); i++){
