@@ -75,11 +75,12 @@ inline void cost_matrix_free(int *** ptr, int dimension){
     *ptr = NULL;
 }
 
-void cost_restriction(Matrix &cost, ii edge_illegal){
-    // cpy the old to the new matrix of costs
-    int a = edge_illegal.first;
-    int b = edge_illegal.second;
-    cost[a][b] = INFINITE;
+void cost_restriction(Matrix &cost, vii edge_illegal){
+    for(int i = 0; i < edge_illegal.size(); i++){
+        int a = edge_illegal[i].first;
+        int b = edge_illegal[i].second;
+        cost[a][b] = INFINITE;
+    }
 }
 
 
@@ -148,11 +149,11 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
     subtour = tour[0];
 }
 
-void vector_print(const std::vector<int> &vec, std::string name){
+void vector_print(const vii &vec, std::string name){
 
     std::cout << "Vector " << name << " :  ";
     for(int i = 0; i < vec.size(); i++){
-        std::cout << vec[i] << " ";
+        std::cout << vec[i].first << " "  << vec[i].second << " |";
     }
     std::cout << std::endl;
 }
@@ -185,26 +186,41 @@ ii tree_node_degree_max_find(vii edge, int dimension){
     return array_item_max(node_degree, dimension);
 }
 
-std::vector<int> tree_node_children(vii edges, int parent){
-    std::vector<int> children;
+vii tree_node_children(vii edges, int parent){
+    vii children;
     for(int i = 0; i < edges.size(); i++){
-        if(edges[i].first == parent)
-            children.push_back(edges[i].second);
-        if(edges[i].second == parent)
-            children.push_back(edges[i].first);
+        if(edges[i].first == parent || edges[i].second == parent)
+            children.push_back(edges[i]);
     }
 
     return children;
 }
 
+bool node_edges_possible(Matrix &cost){
+    int count;
+    for(int i = 0; i < cost.size(); i++){
+        count = 0;
+        for(int j = 0; j < cost.size(); j++){
+            if(cost[i][j] < INFINITE) 
+                count++;
+        }
+        if(count < 2)
+            return false;
+    }
+
+    return true;
+}
+
 // =========  Depth Search Function BEGIN ========= 
 
-void branch_and_bound_depth(Matrix cost, ii restriction, int gen){
+void branch_and_bound_depth(Matrix cost, vii restriction, int gen){
     std::cout << "Gen   " << gen << "\n";
-
-    cost_restriction(cost, restriction);
+    
+    Matrix cost_new = cost;
+    cost_restriction(cost_new, restriction);
     std::cout << "after restrsiction   "  << "\n";
-    Kruskal tree(cost);
+    //cost_new[10][7] = INFINITE;
+    Kruskal tree(cost_new);
     std::cout << "after treee   "  << "\n";
     const int dimension = cost.size();
 
@@ -216,33 +232,39 @@ void branch_and_bound_depth(Matrix cost, ii restriction, int gen){
 
         
         ii tree_node_degree_max = tree_node_degree_max_find(tree.getEdges(), dimension);
+        int parent = tree_node_degree_max.first;
+        bool free = node_edges_possible(cost_new);
+
+        if(!free)
+            return;
+
         std::cout << "degree max   " <<  tree_node_degree_max.second << "\n";
         if(tree_node_degree_max.second == 2){ 
-        std::cout << "degree max  yes  " << "\n";
+            std::cout << "degree max  yes  " << "\n";
             // valid solution
             s_cost_optimal = obj_value;
+            exit(0);
         }else {
             std::cout << "degree max noo   " << "\n";
-            int parent = tree_node_degree_max.first;
-            std::vector<int> node_children = tree_node_children(tree.getEdges(), parent);
+            vii node_children = tree_node_children(tree.getEdges(), parent);
 
             // Debug ;;
             std::cout << "Pai :" << parent << "\nGrau: " << tree_node_degree_max.second << std::endl;
             vector_print(node_children, "filhos");
 
-            matrix_print(cost);
+            matrix_print(cost_new);
 
+            //if(gen == 5)
             //exit(0);
-            if(gen == 10)
-                exit(0);
 
             int gen_next = gen + 1;
             // invalid solution - new searches with distinct restritions 
             for(int i = 0; i < node_children.size(); i++){
-                ii edge_illegal;
-                edge_illegal.first = parent;
-                edge_illegal.second = node_children[i];
-                branch_and_bound_depth(cost, edge_illegal, gen_next);
+                vii restriction_new = restriction;
+
+                restriction_new.push_back(node_children[i]);
+
+                branch_and_bound_depth(cost, restriction_new, gen_next);
             }
         }
     }//else
@@ -379,7 +401,7 @@ int main(int argc, char** argv) {
     }
     std::cout << std::endl;
 
-    ii restriction;
+    vii restriction;
     branch_and_bound_depth(cost, restriction, 0);
 
     std::cout << "COST: " << s_cost_optimal << std::endl;

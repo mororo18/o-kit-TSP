@@ -3,7 +3,6 @@
 Kruskal::Kruskal(Matrix dist){
     for(int i = 0; i < dist.size(); i++){
         costs.push_back( make_pair(-dist[0][i], make_pair(0, i)) );
-        std::cout << "indice " << i << std::endl;
     }
 
     for(int i = 1; i < dist.size(); ++i){
