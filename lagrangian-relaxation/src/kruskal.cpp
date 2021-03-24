@@ -2,12 +2,14 @@
 
 Kruskal::Kruskal(Matrix dist){
     for(int i = 0; i < dist.size(); i++){
-        costs.push_back( make_pair(-dist[0][i], make_pair(0, i)) );
+        costs.push( make_pair(-dist[0][i], make_pair(0, i)) );
+        costs.push( make_pair(-dist[i][0], make_pair(i, 0)) );
     }
 
     for(int i = 1; i < dist.size(); ++i){
         for(int j = 1; j < dist[i].size(); ++j){
             graph.push( make_pair(-dist[i][j], make_pair(i, j)) );
+            //graph.push_back( make_pair(-dist[i][j], make_pair(i, j)) );
         }	
     }
 }
@@ -39,9 +41,19 @@ double Kruskal::MST(int nodes){
     initDisjoint(nodes);
     double cost = 0;
 
+    /*
+    std::sort(graph.begin(), graph.end(), 
+        [](const std::pair<double,ii> &left, const std::pair<double,ii> &right) { 
+            return left.first < right.first;
+        }
+    );
+    */
+
     while(!graph.empty()){
         pair<double, ii> p = graph.top();
+        //pair<double, ii> p = graph.back();
 
+        //graph.pop_back();
         graph.pop();
 
         if(!isSameSet(p.second.first, p.second.second)){
@@ -52,12 +64,12 @@ double Kruskal::MST(int nodes){
     }
 
 
+    /*
     std::partial_sort(costs.begin() , costs.begin() + 2 ,costs.end(), 
         [](const std::pair<double,ii> &left, const std::pair<double,ii> &right) { 
             return -left.first < -right.first;
         }
     );
-    /*
     for(int i = 0; i < costs.size(); i++){
 
         std::cout << costs[i].first << " ";
@@ -70,8 +82,31 @@ double Kruskal::MST(int nodes){
     std::cout << std::endl;
     */
 
-    edges.push_back(costs[0].second);
-    edges.push_back(costs[1].second);
+
+
+    pair<double, ii> edge_significant = costs.top();
+    ii edge_first =  edge_significant.second;
+    ii edge_second;//=  edge_significant.second;
+    edges.push_back(edge_first);
+    cost += -edge_significant.first;
+    costs.pop();
+
+    edge_second =  edge_significant.second;
+    int sum_first = edge_first.first + edge_first.second;
+    int sum_second = edge_second.first + edge_second.second;
+
+    if(sum_first == sum_second){
+        costs.pop();
+        
+        edge_significant = costs.top();
+        edge_second =  edge_significant.second;
+    }
+
+    cost += -edge_significant.first;
+    edges.push_back(edge_second);
+    costs.pop();
+
+    //cost += -costs[0].first -costs[1].first;
 
     return cost;
 }

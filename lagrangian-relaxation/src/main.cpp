@@ -75,11 +75,12 @@ inline void cost_matrix_free(int *** ptr, int dimension){
     *ptr = NULL;
 }
 
-void cost_restriction(Matrix &cost, vii edge_illegal){
+void cost_restriction(Matrix &cost, vii &edge_illegal){
     for(int i = 0; i < edge_illegal.size(); i++){
         int a = edge_illegal[i].first;
         int b = edge_illegal[i].second;
         cost[a][b] = INFINITE;
+        cost[b][a] = INFINITE;
     }
 }
 
@@ -214,48 +215,60 @@ bool node_edges_possible(Matrix &cost){
 // =========  Depth Search Function BEGIN ========= 
 
 void branch_and_bound_depth(Matrix cost, vii restriction, int gen){
-    std::cout << "Gen   " << gen << "\n";
     
     Matrix cost_new = cost;
     cost_restriction(cost_new, restriction);
-    std::cout << "after restrsiction   "  << "\n";
-    //cost_new[10][7] = INFINITE;
+    //std::cout << "after restrsiction   "  << "\n";
+
     Kruskal tree(cost_new);
-    std::cout << "after treee   "  << "\n";
+    //std::cout << "after treee   "  << "\n";
     const int dimension = cost.size();
 
-    int obj_value = tree.MST(dimension);
-    std::cout << "after solving   "  << "\n";
+    double obj_value = tree.MST(dimension);
+    //std::cout << "after solving   "  << "\n";
 
-    std::cout << "current cost   " << obj_value << "\n";
+    vii edges = tree.getEdges();
+
+    //std::cout << "current cost   " << obj_value << "\n";
     if(obj_value <= s_cost_optimal){
 
-        
-        ii tree_node_degree_max = tree_node_degree_max_find(tree.getEdges(), dimension);
+        //vector_print(restriction, "restriction");
+        //std::cout << "\nGen   " << gen << "\n"; //"  Restriction  " << res.first << "   " <<  res.second << "\n";
+        //vector_print(edges, " arvore");
+
+        ii tree_node_degree_max = tree_node_degree_max_find(edges, dimension);
         int parent = tree_node_degree_max.first;
-        bool free = node_edges_possible(cost_new);
+        //bool free = node_edges_possible(cost_new);
 
-        if(!free)
-            return;
+        //if(!free)
+            //return;
 
-        std::cout << "degree max   " <<  tree_node_degree_max.second << "\n";
+        //std::cout << "degree max   " <<  tree_node_degree_max.second << "\n";
         if(tree_node_degree_max.second == 2){ 
-            std::cout << "degree max  yes  " << "\n";
+            //std::cout << "degree max  yes  " << "\n";
             // valid solution
             s_cost_optimal = obj_value;
             exit(0);
         }else {
-            std::cout << "degree max noo   " << "\n";
-            vii node_children = tree_node_children(tree.getEdges(), parent);
-
+            //std::cout << "degree max noo   " << "\n";
+            vii node_children = tree_node_children(edges, parent);
+            
+            /*
+            std::sort(node_children.begin(), node_children.end(), 
+                [](const ii &left, const ii &right){
+                    return (left.first + left.second) < (right.first + right.second);
+                }
+            );
+            */
+            
             // Debug ;;
-            std::cout << "Pai :" << parent << "\nGrau: " << tree_node_degree_max.second << std::endl;
-            vector_print(node_children, "filhos");
+                //std::cout << "Pai :" << parent << "\nGrau: " << tree_node_degree_max.second << std::endl;
+                //vector_print(node_children, "filhos");
 
-            matrix_print(cost_new);
+            //matrix_print(cost_new);
 
-            //if(gen == 5)
-            //exit(0);
+            //if(gen == 10)
+                //exit(0);
 
             int gen_next = gen + 1;
             // invalid solution - new searches with distinct restritions 
@@ -390,6 +403,7 @@ int main(int argc, char** argv) {
         }
     }
 
+
     Kruskal tree(cost);
 
 
@@ -404,7 +418,8 @@ int main(int argc, char** argv) {
     vii restriction;
     branch_and_bound_depth(cost, restriction, 0);
 
-    std::cout << "COST: " << s_cost_optimal << std::endl;
+    //std::cout << "COST: " << s_cost_optimal << std::endl;
+
 
 /*
     for (int i = 0; i < data->getDimension(); i++) {

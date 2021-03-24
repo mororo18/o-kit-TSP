@@ -24,7 +24,9 @@ class Kruskal{
 
     private:
         priority_queue <pair<double,ii> > graph;
-        vector <pair<double, ii> >costs;
+        priority_queue <pair<double,ii> > costs;
+        //vector <pair<double,ii> > graph;
+        //vector <pair<double, ii> >costs;
         vector <int> pset;
         vii edges;
 
