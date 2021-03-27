@@ -80,6 +80,12 @@ double Kruskal::MST(int nodes){
     std::cout << costs[1].second.first << " ";
     std::cout << costs[1].second.second << " ";
     std::cout << std::endl;
+
+    std::cout << edge_first.first << " " <<  edge_first.second;
+    std::cout << std::endl;
+
+    std::cout << edge_second.first << " " <<  edge_second.second;
+    std::cout << std::endl;
     */
 
 
