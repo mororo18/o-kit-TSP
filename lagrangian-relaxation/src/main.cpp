@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cfloat>
+#include <cmath>
 #include "data.h"
 #include "hungarian.h"
 #include "kruskal.h"
@@ -25,6 +26,7 @@ struct node_info2 {
 
 int cost_optimal;
 int s_cost_optimal = INFINITE;
+double upper_bd;
 std::vector<int> s;
 
 int cost_optimal_get(char * instance_name){
@@ -114,7 +116,7 @@ void vector_print_dbl(const vector<double> &vec, std::string name){
 
 inline ii array_item_max(int * arr, int size){
     int max = arr[0];
-    int index;
+    int index = 0;
     ii node_and_degree;
     for(int i = 1; i < size; i++){
         if(arr[i] > max){
@@ -150,10 +152,10 @@ vii tree_node_children(vii edges, int parent){
     return children;
 }
 
-void Matrix_penalty_apply(Matrix & cost, std::vector<double> subgrad){
+void Matrix_penalty_apply(Matrix & cost, std::vector<double> vec){
     for(int i = 0; i < cost.size(); i++)
         for(int j = 0; j < cost.size(); j++){
-            cost[i][j] -= subgrad[i] + subgrad[j];
+            cost[i][j] -= vec[i] + vec[j];
         }
 }
 
@@ -187,7 +189,7 @@ double vec_sum(const std::vector<double> vec){
 
 double step_size_calc(std::vector<int> subgrad, double lower_bound, double upper_bound, double epsilon){
     double step_size;
-    double dif = 1.05f * upper_bound - lower_bound;
+    double dif = upper_bound - lower_bound;
     int d = 0;
 
     for(auto &i: subgrad){
@@ -200,16 +202,17 @@ double step_size_calc(std::vector<int> subgrad, double lower_bound, double upper
     return step_size;
 }
 
-void vec_penalty_update(std::vector<double> & vec_penalty, std::vector<int> subgrad, double epsilon){
+void vec_penalty_update(std::vector<double> & vec_penalty, std::vector<int> subgrad, double step_size){
     double a;
     for(int i = 0; i < vec_penalty.size(); i++){
-        a = epsilon * subgrad[i];
-        //a = ( a > 0 ? a : 0.0f);
+        a = step_size * subgrad[i];
+        //double diff = vec_penalty[i] - a;
+        //a = (diff > 0 ? diff : 0.0f);
         vec_penalty[i] += a;
     }
 }
 
-bool isCyclicUtil(vii edges, int v, bool visited[], int parent)
+bool cycle_search_path(vii edges, int v, bool visited[], int parent)
 {
 
     // Mark the current node as visited
@@ -230,7 +233,7 @@ bool isCyclicUtil(vii edges, int v, bool visited[], int parent)
         //then recur for that adjacent
         if (!visited[adj])
         {
-            if (isCyclicUtil(edges, adj, visited, v))
+            if (cycle_search_path(edges, adj, visited, v))
                 return true;
         }
 
@@ -243,7 +246,7 @@ bool isCyclicUtil(vii edges, int v, bool visited[], int parent)
     return false;
 }
 
-bool isCyclic(vii edges, int dimension)
+bool cycle_search(vii edges, int dimension)
 {
 
     // Mark all the vertices as not
@@ -262,7 +265,7 @@ bool isCyclic(vii edges, int dimension)
         // Don't recur for u if
         // it is already visited
         if (!visited[u])
-            if (isCyclicUtil(edges, u, visited, -1))
+            if (cycle_search_path(edges, u, visited, -1))
                 return true;
     }
     return false;
@@ -294,8 +297,7 @@ double primal_bound(Matrix cost){
 
         if(node_degree(graph, a) < 2 
         && node_degree(graph, b) < 2 
-        && (!isCyclic(graph_cpy, dimension)
-        || graph.size() == dimension - 1)){
+        && (!cycle_search(graph_cpy, dimension) || graph.size() == dimension - 1)){
             graph = graph_cpy;
             cost_total += edge_cost;
         }
@@ -311,55 +313,76 @@ double primal_bound(Matrix cost){
 
 void branch_and_bound_depth(Matrix cost, const std::vector<double> &vec_penalty, vii restriction, int gen){
     
-    cost_restriction(cost, restriction);
     const int dimension = cost.size();
+    cost_restriction(cost, restriction);
     Matrix cost_lagrange = cost;
     //std::cout << "after restrsiction   "  << "\n";
 
     std::vector<double> vec_penalty_new = vec_penalty;
+    std::vector<double> vec_penalty_best;
     std::vector<int> subgrad (dimension);
     vii tree_edges;
     double step_size;
     double epsilon = 2.0f;
-    double upper_bound = primal_bound(cost);
+    //upper_bd = primal_bound(cost);
     double obj_value;
     double obj_value_before;
+    double obj_value_max;
     int count = 0 ;
     bool flag = false;
+    vii best_edges;
 
     int iteration_sum = 0;
-    //std::cout << "Limitante primal " << upper_bound << std::endl;
     while(true){
-        //if (count == 5)
-            //exit(0);
         Matrix_penalty_apply(cost_lagrange, vec_penalty_new);
-        //matrix_print(cost_lagrange);
         Kruskal tree(cost_lagrange);
+        //matrix_print(cost_lagrange);
 
         // solve/generate the optimal 1-tree for the current penalties
         obj_value = tree.MST(dimension);
-        //obj_value += 2*vec_sum(vec_penalty_new);
 
-        //std::cout << "current cost   " << obj_value << "\n";
+        /*
+        std::cout << "iteration   " << iteration_sum << "\n";
+        std::cout << "epsilon   " << epsilon << "\n";
+        std::cout << "value   " << obj_value << "\n";
+        */
 
-        // stop condition
-        if(upper_bound - obj_value <= 1)
+        // break condition
+        if(upper_bd - obj_value <= 1)
+            break;
+        if(obj_value > s_cost_optimal)
             break;
 
-        // if the value not increases after 30 iterations, epsilon is decreased
-        if(flag && (obj_value - obj_value_before - DBL_EPSILON) <= 0){
-            iteration_sum++;
-
-            if(iteration_sum >= 30){
-                iteration_sum = 0;
-                epsilon /= 2;
-            }
-        }
-        
         tree_edges = tree.getEdges();
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
 
-        // stop condition
+        if(!flag){
+            obj_value_max = obj_value;
+            best_edges = tree_edges;
+            vec_penalty_best = vec_penalty_new;
+        }else if(obj_value_max < obj_value){
+            obj_value_max = obj_value;
+            best_edges = tree_edges;
+            vec_penalty_best = vec_penalty_new;
+        }
+
+        if(flag && obj_value <= obj_value_max )
+            iteration_sum++;
+        else
+            iteration_sum = 0;
+
+        // if the value not increases after 30 iterations, epsilon is decreased
+        if(iteration_sum >= 20){
+            iteration_sum = 0;
+            epsilon /= 2;
+        }
+
+        // break condition
+        if(epsilon < 0.0005f)
+            break;
+        
+
+        // break condition
         if(tree_node_degree_max.second == 2)
             break;
 
@@ -367,53 +390,73 @@ void branch_and_bound_depth(Matrix cost, const std::vector<double> &vec_penalty,
         subgrad = subgrad_calc(tree_edges, dimension);
         //vector_print_int(subgrad, "subgrad");
 
-        step_size = step_size_calc(subgrad, obj_value, upper_bound, epsilon);
+        step_size = step_size_calc(subgrad, obj_value, upper_bd, epsilon);
         //std::cout << "step size   " << step_size << "\n";
-
-        // stop condition
-        if(step_size < 0.0005f)
-            break;
 
         vec_penalty_update(vec_penalty_new, subgrad, step_size);
         //vector_print_dbl(vec_penalty_new, "penalty");
 
-        obj_value_before = obj_value;
         cost_lagrange = cost;
+        count++;
+        obj_value_before = obj_value;
         flag = true;
-        //count++;
     }
 
     //vector_print_pair(tree_edges, "result");
 
+
+    std::cout << "\n" << "GEN   " << gen << "\n";
+    std::cout << "Limitante primal " << upper_bd << std::endl;
+    std::cout << "Iter max   " << count << "\n";
     std::cout << "current cost   " << obj_value << "\n";
+    vector_print_int(subgrad, "Subgrad");
+
 
     //exit(0);
 
-    if(obj_value <= s_cost_optimal){
+    tree_edges = best_edges;
+    vec_penalty_new = vec_penalty_best;
+
+    if(obj_value < s_cost_optimal){
         //vector_print(restriction, "restriction");
 
+        //upper_bd = ceil(obj_value);
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
         int parent = tree_node_degree_max.first;
+        int parent_degree = tree_node_degree_max.second;
         //bool free = node_edges_possible(cost_new);
 
         //if(!free)
             //return;
 
         //std::cout << "degree max   " <<  tree_node_degree_max.second << "\n";
-        if(tree_node_degree_max.second == 2){ 
+        if(parent_degree == 2){ 
             //std::cout << "degree max  yes  " << "\n";
             // valid solution
             s_cost_optimal = obj_value;
+            std::cout << "current cost   " << obj_value << "\n";
             vector_print_pair(tree_edges, "solution ");
             //exit(0);
-        }else {
+        }else if(parent_degree > 2){
             //std::cout << "degree max noo   " << "\n";
             vii node_children = tree_node_children(tree_edges, parent);
             //node_children_disp(node_children, parent, cost_new);
+
             
+               /*
+               std::partial_sort(node_children.begin(), node_children.begin() + 2, node_children.end(), 
+               [](const ii &left, const ii &right){
+               return left.first + left.second < right.first + right.second;
+               }
+               );
+            
+            */
+
             // Debug ;;
-                std::cout << "Pai :" << parent << "\nGrau: " << tree_node_degree_max.second << std::endl;
+            /*
+                std::cout << "Pai :" << parent << "\nGrau: " << parent_degree << std::endl;
                 //vector_print(node_children, "filhos");
+                */
 
 
             //if(gen == 10)
@@ -541,20 +584,13 @@ int main(int argc, char** argv) {
     const char * bound_opt = "-o";
 
     
+
+
     Data * data = new Data(argc, argv[1]);
     data->readData();
     int dimension = data->getDimension();
     
     Matrix cost (dimension, std::vector<double>(dimension));
-    /*
-    int dimension = 5;
-
-    Matrix cost =   {{ 99999 , 30 , 26 , 50 , 40},
-             { 30 , 99999 , 24 , 40 , 50},
-             { 26 , 24 , 99999 , 24 , 26},
-             { 50 , 40 , 24 , 99999 , 30},
-             { 40 , 50 , 26 , 30 , 99999}};
-             */
 
     
     for (int i = 0; i < data->getDimension(); i++){
@@ -564,7 +600,16 @@ int main(int argc, char** argv) {
         }
     }
     
+    /*
 
+    int dimension = 5;
+
+    Matrix cost =   {{ 99999 , 30 , 26 , 50 , 40},
+             { 30 , 99999 , 24 , 40 , 50},
+             { 26 , 24 , 99999 , 24 , 26},
+             { 50 , 40 , 24 , 99999 , 30},
+             { 40 , 50 , 26 , 30 , 99999}};
+    */
 
     /*
     Kruskal tree(cost);
@@ -578,8 +623,10 @@ int main(int argc, char** argv) {
     }
     std::cout << std::endl;
     */
+    //std::vector<double> penalty = {0,0,0,0,0};
     std::vector<double> penalty (dimension, 0); //= {0,0,0,0,0};
     vii restriction;
+    upper_bd = primal_bound(cost);
     branch_and_bound_depth(cost, penalty, restriction, 0);
 
     std::cout << "COST: " << s_cost_optimal << std::endl;
