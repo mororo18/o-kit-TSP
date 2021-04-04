@@ -21,9 +21,11 @@ struct node_info {
 
 struct node_info2 {
     std::vector<std::pair<int, int>> edges_illegal;
-    std::vector<int> subtour;
+    vii edges_illegal_new;;
+    std::vector<double> vec_penalty;
     bool fertility;
 };
+
 
 int cost_optimal;
 double s_cost_optimal = INFINITE;
@@ -325,6 +327,22 @@ bool subgrad_validate(const std::vector<int> & subgrad){
     return true;
 }
 
+void vector_pair_sort(vii & vec, const Matrix & cost){
+    for(int i = 0; i < vec.size() -1; i++)
+        for(int j = i+1; j < vec.size(); j++){
+            double i_cost = cost[vec[i].first][vec[i].second];
+            double j_cost = cost[vec[j].first][vec[j].second];
+
+            if(j_cost > i_cost){
+                ii aux = vec[j];
+                vec[j] = vec[i];
+                vec[i] = aux;
+            }
+            
+        }
+}
+
+vii result;
 // =========  Depth Search Function BEGIN ========= 
 
 void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_penalty, vii restriction, int gen){
@@ -354,15 +372,6 @@ void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_pe
 
         // solve/generate the optimal 1-tree with the current penalties
         obj_value = tree.MST(dimension);
-
-        /*
-        std::cout << "iteration   " << iteration_sum << "\n";
-        std::cout << "epsilon   " << epsilon << "\n";
-        std::cout << "value   " << obj_value << "\n";
-        */
-        //std::cout << "penalty   " << 2*vec_sum(vec_penalty_new) << "\n";
-        //std::cout << "epsilon   " << DBL_EPSILON << "\n";
-
         tree_edges = tree.getEdges();
 
         if(obj_value_max < obj_value){
@@ -406,7 +415,7 @@ void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_pe
         }else
             iteration_sum = 0;
 
-        if((upper_bd - obj_value_max)/upper_bd < 0.0001)
+        if((upper_bd - obj_value_max)/upper_bd < 0.01)
             break;
 
         step_size = step_size_calc(subgrad, obj_value, upper_bd, epsilon);
@@ -436,7 +445,7 @@ void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_pe
 
     //exit(0);
 
-    if(obj_value < s_cost_optimal - DBL_EPSILON){
+    if(obj_value - DBL_EPSILON < s_cost_optimal ){
         //vector_print(restriction, "restriction");
 
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
@@ -447,24 +456,30 @@ void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_pe
         if(parent_degree == 2){ 
             
             s_cost_optimal = obj_value;
-            //upper_bd = obj_value;
-            std::cout << "current cost   " << obj_value << "\n";
+            upper_bd = obj_value;
+            std::cout << "current cost  solution  " << obj_value << "\n";
             //vector_print_pair(tree_edges, "solution ");
+            result = tree_edges;
         }else if(parent_degree > 2){
             vii node_children = tree_node_children(tree_edges, parent);
-
+            vector_pair_sort(node_children, cost);
+            //vector_print_pair(node_children, " | ");
 
             int gen_next = gen + 1;
-            // invalid solution - new searches with distinct restritions 
-            while(!node_children.empty()){
+            // invalid solution - new searches with distinct restrictions 
+            //while(!node_children.empty()){
+            for(int i = 0; i < node_children.size(); i++){
 
-                int i = rand() % node_children.size();
+                //int i = rand() % node_children.size();
 
                 vii restriction_new = restriction;
                 restriction_new.push_back(node_children[i]);
 
+                //std::cout << "Current cost   " << cost[node_children[i].first][node_children[i].second] << " ";
+                //vector_print_pair(restriction_new, " | ");
+
                 branch_and_bound_depth(cost, vec_penalty_new, restriction_new, gen_next);
-                node_children.erase(node_children.begin() + i);
+                //node_children.erase(node_children.begin() + i);
 
             }
         }
@@ -476,69 +491,152 @@ void branch_and_bound_depth(const Matrix cost, const std::vector<double> &vec_pe
 
 
 // =========  Breadth Search Functions BEGIN ========= 
-/*
-inline void node_solve(struct node_info2 &node, int **cost, int dimension){
+
+inline void node_solve(struct node_info2 &node, const Matrix & cost){
     
-    const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
-    hungarian_problem_t p;
+    Matrix cost_cpy = cost;
+    const int dimension = cost_cpy.size();
+    vii node_restriction = node.edges_illegal;
+    cost_restriction(cost_cpy, node_restriction);
+    Matrix cost_lagrange = cost_cpy;
+    //std::cout << "after restrsiction   "  << "\n";
 
-    int ** cost_new;
-    cost_matrix_alloc(&cost_new, dimension);
-    cost_restriction(node.edges_illegal, cost, cost_new, dimension);
+    std::vector<double> vec_penalty_new = node.vec_penalty;
+    std::vector<double> vec_penalty_best;
+    std::vector<int> subgrad (dimension);
+    vii tree_edges;
+    vii best_edges;
+    double step_size;
+    double epsilon = 2.0f;
+    double obj_value;
+    double obj_value_max = 0;
+    int count = 0 ;
 
-    hungarian_init(&p, cost_new, dimension, dimension, mode); 
-    cost_matrix_free(&cost_new, dimension);
+    int iteration_sum = 0;
+    while(true){
+        Matrix_penalty_apply(cost_lagrange, vec_penalty_new);
+        Kruskal tree(cost_lagrange);
 
-    int node_cost = hungarian_solve(&p);
+        // solve/generate the optimal 1-tree with the current penalties
+        obj_value = tree.MST(dimension);
+        tree_edges = tree.getEdges();
 
-    if(node_cost <= s_cost_optimal){
+        if(obj_value_max < obj_value){
+            obj_value_max = obj_value;
+            best_edges = tree_edges;
+            vec_penalty_best = vec_penalty_new;
+            //cost_cpy = cost_lagrange;
+        }
 
-        subtour_lower_get(node.subtour, &p, dimension);
-        hungarian_free(&p);
+        // subgradient 
+        subgrad = subgrad_calc(tree_edges, dimension);
+        //vector_print_int(subgrad, "subgrad");
 
-        if(node.subtour.size() >= dimension){ 
-            // valid solution
-            s_cost_optimal = node_cost;
-            s = node.subtour;
-            node.fertility = false;
-        }else   
-            node.fertility = true;
+        // break condition
+        if(subgrad_validate(subgrad)){
+            obj_value_max = obj_value;
+            best_edges = tree_edges;
+            vec_penalty_best = vec_penalty_new;
+            break;
+        }
 
-    }else{
-        hungarian_free(&p);
-        node.fertility = false;
+        // break condition
+        if(upper_bd  <= obj_value)
+            break;
+        if(obj_value > s_cost_optimal){
+            break;
+        }
+
+        if(obj_value <= obj_value_max ){
+            iteration_sum++;
+
+            // if the value not increases after 20 iterations, epsilon is decreased
+            if(iteration_sum >= 20){
+                iteration_sum = 0;
+                epsilon /= 2;
+
+                if(epsilon < 0.0005f)
+                    break;
+            }
+
+        }else
+            iteration_sum = 0;
+
+        if((upper_bd - obj_value_max)/upper_bd < 0.01)
+            break;
+
+        step_size = step_size_calc(subgrad, obj_value, upper_bd, epsilon);
+        //std::cout << "step size   " << step_size << "\n";
+
+        vec_penalty_update(vec_penalty_new, subgrad, step_size);
+        //vector_print_dbl(vec_penalty_new, "penalty");
+
+        cost_lagrange = cost_cpy;
+        count++;
     }
+
+    tree_edges = best_edges;
+    node.vec_penalty = vec_penalty_best;
+    obj_value = obj_value_max;
+
+    if(obj_value -DBL_EPSILON< s_cost_optimal){
+
+        ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
+        int parent = tree_node_degree_max.first;
+        int parent_degree = tree_node_degree_max.second;
+
+        // valid solution
+        if(parent_degree == 2){ 
+            
+            s_cost_optimal = obj_value;
+            upper_bd = obj_value;
+            std::cout << "current cost  solution  " << obj_value << "\n";
+            //vector_print_pair(tree_edges, "solution ");
+            result = tree_edges;
+            node.fertility = false;
+        }else{   
+            vii node_children = tree_node_children(tree_edges, parent);
+            vector_pair_sort(node_children, cost);
+            node.edges_illegal_new = node_children;
+            node.fertility = true;
+        }
+
+    }else
+        node.fertility = false;
+    
 }
 
 inline void node_procreate(std::list<struct node_info2> & recipient, struct node_info2 & node_parent){
-    for(int i = 0; i < node_parent.subtour.size() - 1; i++){
+    for(int i = 0; i < node_parent.edges_illegal_new.size(); i++){
         struct node_info2 node_son;
 
+        node_son.vec_penalty = node_parent.vec_penalty;
         node_son.edges_illegal = node_parent.edges_illegal;
 
-        std::pair<int, int> edge;
-        edge.first = node_parent.subtour[i];
-        edge.second = node_parent.subtour[i+1];
+        std::pair<int, int> edge = node_parent.edges_illegal_new[i];
 
         node_son.edges_illegal.push_back(edge);
         recipient.push_back(node_son);
     }
 }
 
-void branch_and_bound_breadth(Data * data, int ** cost){
+void branch_and_bound_breadth(const Matrix cost, int gen){
 
-    const int dimension = data->getDimension();
+    const int dimension = cost.size();
+    std::vector<double> vec_penalty_default (dimension, 0);
     struct node_info2 node_root;
+    node_root.vec_penalty = vec_penalty_default;
     std::list<struct node_info2> layer_A;
     std::list<struct node_info2> layer_B;
 
     layer_A.push_back(node_root);
+    int count = 0;
 
     while(!layer_A.empty() || !layer_B.empty()){
 
+        std::cout << "Gen " << count++ << std::endl;
         while(!layer_A.empty()){
-
-            node_solve(layer_A.front(), cost, dimension);
+            node_solve(layer_A.front(), cost);
 
             if(layer_A.front().fertility == true)
                 // generate the sons in the layer B
@@ -549,9 +647,9 @@ void branch_and_bound_breadth(Data * data, int ** cost){
             
         }
 
+        std::cout << "Gen " << count++ << std::endl;
         while(!layer_B.empty()){
-
-            node_solve(layer_B.front(), cost, dimension);
+            node_solve(layer_B.front(), cost);
 
             if(layer_B.front().fertility == true)
                 // generate the sons in the layer A
@@ -569,9 +667,20 @@ void branch_and_bound_breadth(Data * data, int ** cost){
 // =========  Breadth Search Functions END ========= 
 
 
-*/
 
 
+double cost_calc(vii & edges, Matrix & cost){
+    double total = 0;
+
+    for(auto i : edges){
+        int a  = i.first;
+        int b  = i.second;
+
+        total += cost[a][b];
+    }
+
+    return total;
+}
 
 int main(int argc, char** argv) {
 
@@ -621,15 +730,18 @@ int main(int argc, char** argv) {
     //std::vector<double> penalty = {0,0,0,0,0};
     std::vector<double> penalty (dimension, 0); //= {0,0,0,0,0};
     vii restriction;
+    //subgrad = subgrad_calc(tree_edges, dimension);
     upper_bd = primal_bound(cost);
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    branch_and_bound_depth(cost, penalty, restriction, 0);
+    //branch_and_bound_depth(cost, penalty, restriction, 0);
+    branch_and_bound_breadth(cost, 0);
 
     auto t2 = std::chrono::high_resolution_clock::now();
 
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::cout << "COST: " << s_cost_optimal << std::endl;
+    std::cout << "COST calc: " << cost_calc(result, cost)  << std::endl;
     std::cout << "TIME: " << exec_time / 10e2  << std::endl;
     //vii test = {make_pair(0,1), make_pair(1,2), make_pair(2,3), make_pair(3,2)};
     //std::cout << "primal bound: " << primal_bound(cost) << std::endl;
