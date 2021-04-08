@@ -524,7 +524,7 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
 
     //exit(0);
 
-    if(ceil(obj_value + DBL_EPSILON) < s_cost_optimal ){
+    if(obj_value + DBL_EPSILON < s_cost_optimal - 1){
         //vector_print(restriction, "restriction");
 
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
@@ -595,7 +595,7 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
 
     //std::cout << obj_value << std::endl;
 
-    if(ceil(obj_value + DBL_EPSILON)  < s_cost_optimal){
+    if(ceil(obj_value + DBL_EPSILON)  < s_cost_optimal - 1){
 
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
         std::vector<int> parents = tree_nodes_degree_max(node.subgrad);
@@ -605,13 +605,13 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
         // valid solution
         if(parent_degree == 2){ 
             
-            //s_cost_optimal = obj_value;
+            s_cost_optimal = obj_value;
             upper_bd = obj_value;
             std::cout << "current cost  solution  " << obj_value << "\n";
             //vector_print_pair(tree_edges, "solution ");
             result = tree_edges;
             node_parent.fertility = false;
-        }else{   
+        }else if(parent_degree > 2){   
             vii node_children = tree_nodes_children(cost, tree_edges, parents);
             vector_pair_sort(node_children, cost);
             //vector_pair_sort(node_children, cost);
@@ -652,7 +652,6 @@ void branch_and_bound_breadth(const Matrix cost, int gen){
 
     while(!layer_A.empty() || !layer_B.empty()){
 
-        //std::cout << "Gen " << count++ << std::endl;
         std::cout << "Gen " << count++ << " size " << layer_A.size() << std::endl;
         while(!layer_A.empty()){
             node_solve(layer_A.front(), cost);
@@ -668,7 +667,6 @@ void branch_and_bound_breadth(const Matrix cost, int gen){
 
         std::cout << "Gen " << count++ << " size " << layer_B.size() << std::endl;
 
-        //std::cout << "Gen " << count++ << std::endl;
         while(!layer_B.empty()){
             node_solve(layer_B.front(), cost);
 
