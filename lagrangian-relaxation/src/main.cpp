@@ -8,7 +8,6 @@
 #include <cfloat>
 #include <cmath>
 #include "data.h"
-#include "hungarian.h"
 #include "lagrangian.h"
 
 double s_cost_optimal = INFINITE; 
@@ -43,26 +42,6 @@ void matrix_print(const Matrix &cost){
         }
         std::cout << std::endl;
     }
-}
-
-void cost_matrix_alloc(int *** matrix, int dimension){
-    int ** ptr =  (int**)calloc(dimension, sizeof(int*));
-    hungarian_test_alloc(ptr);
-    for(int i = 0; i < dimension; i++){
-        ptr[i] =  (int*)calloc(dimension, sizeof(int));
-        hungarian_test_alloc(ptr[i]);
-    }
-
-    *matrix = ptr;
-}
-
-inline void cost_matrix_free(int *** ptr, int dimension){
-    int ** ar = *ptr;
-    for(int i = 0; i < dimension; i++)
-        free(ar[i]);
-    free(ar);
-
-    *ptr = NULL;
 }
 
 void vector_print_pair(const vii &vec, std::string name){
