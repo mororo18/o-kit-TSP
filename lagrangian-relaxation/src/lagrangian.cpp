@@ -74,16 +74,16 @@ bool subgrad_validate(const std::vector<int> & subgrad){
     return true;
 }
 
-struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info node_parent){
+void lagrangian_dual_solve(const Matrix & cost, struct node_info & node){
 
     const int dimension = cost.size();
 
     Matrix cost_cpy = cost;
-    vii restriction = node_parent.edges_illegal;
+    vii restriction = node.edges_illegal;
     cost_restriction(cost_cpy, restriction);
     Matrix cost_lagrange = cost_cpy;
 
-    std::vector<double> vec_penalty_new = node_parent.vec_penalty;
+    std::vector<double> vec_penalty_new = node.vec_penalty;
     std::vector<double> vec_penalty_best;
     std::vector<int> subgrad (dimension);
     std::vector<int> subgrad_max (dimension);
@@ -91,7 +91,7 @@ struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info nod
     vii best_edges;
     double step_size;
     double epsilon = 1.0f;
-    if(dimension > 80)
+    if(dimension > 77)
         epsilon = 2.0f;
     double obj_value;
     double obj_value_max = 0;
@@ -114,6 +114,7 @@ struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info nod
             best_edges = tree_edges;
             vec_penalty_best = vec_penalty_new;
             subgrad_max  = subgrad;
+            //std::cout << obj_value << std::endl;
         }
 
         //vector_print_int(subgrad, "subgrad");
@@ -128,16 +129,16 @@ struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info nod
         }
 
         // break condition
-        if(upper_bd  <= obj_value)
+        if(primal_bound < obj_value)
             break;
-        if(obj_value > s_cost_optimal){
-            break;
-        }
+        //if(obj_value > s_cost_optimal){
+            //break;
+        //}
 
         if(obj_value <= obj_value_max ){
             iteration_sum++;
 
-            // if the value not increases after 20 iterations, epsilon is decreased
+            // if the value not increases after 30 iterations, epsilon is decreased
             if(iteration_sum >= 30){
                 iteration_sum = 0;
                 epsilon /= 2;
@@ -149,10 +150,10 @@ struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info nod
         }else
             iteration_sum = 0;
 
-        if((upper_bd - obj_value_max)/upper_bd < 0.0001)
-            break;
+        //if((primal_bound - obj_value_max)/primal_bound < 0.00001)
+            //break;
 
-        step_size = step_size_calc(subgrad, obj_value, upper_bd, epsilon);
+        step_size = step_size_calc(subgrad, obj_value, primal_bound, epsilon);
         //std::cout << "step size   " << step_size << "\n";
 
         vec_penalty_update(vec_penalty_new, subgrad, step_size);
@@ -162,13 +163,12 @@ struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info nod
         count++;
     }
 
-    struct node_info node;
+    //struct node_info node = node_parent;
 
     node.tree = best_edges;
     node.vec_penalty = vec_penalty_best;
     node.cost = obj_value_max;
-    node.edges_illegal = node_parent.edges_illegal;
+    //node.edges_illegal = node_parent.edges_illegal;
     node.subgrad = subgrad_max;
 
-    return node;
 }

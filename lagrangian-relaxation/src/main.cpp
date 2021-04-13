@@ -11,7 +11,7 @@
 #include "lagrangian.h"
 
 double s_cost_optimal = INFINITE; 
-double upper_bd;
+double primal_bound;
 
 std::vector<int> s;
 
@@ -257,7 +257,7 @@ bool cycle_search(vii edges, int dimension)
     return false;
 }
 
-double primal_bound(Matrix cost){
+double primal_bound_calc(Matrix cost){
     const int dimension = cost.size();
     std::priority_queue<std::pair<double, ii>> edges;
 
@@ -301,21 +301,40 @@ double primal_bound(Matrix cost){
 
 vii result;
 
+void node_info_print(struct node_info & node){
+    std::cout << " NODE INFO" << std::endl;
+    vector_print_pair(node.edges_illegal, "restricoes ");
+    vector_print_pair(node.edges_illegal_new, "restricoes novas ");
+    vector_print_pair(node.tree, "arvore ");
+    vector_print_dbl(node.vec_penalty, "vetor penalidades ");
+    vector_print_int(node.subgrad, "subgrad ");
+    std::cout << "node cost   " << node.cost << "\n";
+
+}
+
 // =========  Depth Search Function BEGIN ========= 
 
 void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int gen){
 
     const int dimension = cost.size();
-    
-    struct node_info node; 
-    node = lagrangian_dual_solve(cost, node_parent);
 
-    vii tree_edges = node.tree;
-    double obj_value = node.cost;
+    //std::cout << "PAI  "  << std::endl;
+    //node_info_print(node_parent);
+    
+    //struct node_info node; 
+    lagrangian_dual_solve(cost, node_parent);
+    //node_parent = node;
+
+    vii tree_edges = node_parent.tree;
+    double obj_value = node_parent.cost;
 
     std::cout << "\n" << "GEN   " << gen << "\n";
-    std::cout << "Limitante primal " << upper_bd << std::endl;
+    std::cout << "Limitante primal " << primal_bound << std::endl;
     std::cout << "current cost   " << obj_value << "\n";
+
+    //node_info_print(node_parent);
+
+    //if(gen == 2) exit(0);
     /*
     */
     //vector_print_int(subgrad, "Subgrad");
@@ -324,11 +343,11 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
 
     //exit(0);
 
-    if(obj_value + DBL_EPSILON < s_cost_optimal){
+    if(obj_value + DBL_EPSILON < s_cost_optimal ){
         //vector_print(restriction, "restriction");
 
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
-        std::vector<int> parents = tree_nodes_degree_max(node.subgrad);
+        std::vector<int> parents = tree_nodes_degree_max(node_parent.subgrad);
         //int parent = tree_node_degree_max.first;
         int parent_degree = parents[0];
         parents.erase(parents.begin());
@@ -338,31 +357,21 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
         if(parent_degree == 2){ 
             
             s_cost_optimal = obj_value;
-            upper_bd = obj_value;
+            primal_bound = obj_value;
             std::cout << "current cost  solution  " << obj_value << "\n";
-            //vector_print_pair(tree_edges, "solution ");
             result = tree_edges;
+            struct node_info node;
+            node.vec_penalty = node_parent.vec_penalty;
+            //branch_and_bound_depth(cost, node, 0);
+            //exit(0);
         }else if(parent_degree > 2){
-            //vii node_children = tree_node_children(tree_edges, parent);
-            /*
-            vector_print_pair(tree_edges, " | ");
-            for(int i = 0; i < parents.size(); i++){
-                
-                std::cout << parents[i] << " ";
-                vector_print_pair(tree_node_children(tree_edges, parents[i]), " | ");
-            }
-            */
             vii node_children = tree_nodes_children(cost, tree_edges, parents);
-            //exit(0);
             vector_pair_sort(node_children, cost);
-            //vector_print_pair(node_children, " | ");
-            //vector_print_int(node.subgrad, "subgrad");
-            //exit(0);
 
             int gen_next = gen + 1;
             // invalid solution -> new branchs for each new restriction
             for(int i = 0; i < node_children.size(); i++){
-                struct node_info node_child = node;
+                struct node_info node_child = node_parent;
 
                 node_child.edges_illegal.push_back(node_children[i]);
 
@@ -387,18 +396,24 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
 
     const int dimension = cost.size();
     
+    //std::cout << "PAI  "  << std::endl;
+    //node_info_print(node_parent);
+    
     struct node_info node; 
-    node = lagrangian_dual_solve(cost, node_parent);
+    lagrangian_dual_solve(cost, node_parent);
 
-    vii tree_edges = node.tree;
-    double obj_value = node.cost;
+    vii tree_edges = node_parent.tree;
+    double obj_value = node_parent.cost;
 
-    //std::cout << obj_value << std::endl;
+    //node_info_print(node_parent);
 
-    if(ceil(obj_value + DBL_EPSILON)  < s_cost_optimal - 1){
+    //std::cout << "node solution " <<obj_value << std::endl;
+    //if(  10614.6 -  obj_value <= 0 ) exit(0);
+
+    if((obj_value + DBL_EPSILON)  < s_cost_optimal){
 
         ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
-        std::vector<int> parents = tree_nodes_degree_max(node.subgrad);
+        std::vector<int> parents = tree_nodes_degree_max(node_parent.subgrad);
         int parent_degree = parents[0];
         parents.erase(parents.begin());
 
@@ -406,7 +421,7 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
         if(parent_degree == 2){ 
             
             s_cost_optimal = obj_value;
-            upper_bd = obj_value;
+            primal_bound = obj_value;
             std::cout << "current cost  solution  " << obj_value << "\n";
             //vector_print_pair(tree_edges, "solution ");
             result = tree_edges;
@@ -414,8 +429,8 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
         }else if(parent_degree > 2){   
             vii node_children = tree_nodes_children(cost, tree_edges, parents);
             vector_pair_sort(node_children, cost);
-            //vector_pair_sort(node_children, cost);
             node_parent.edges_illegal_new = node_children;
+            //node_parent.vec_penalty = node.vec_penalty;
             node_parent.fertility = true;
         }
 
@@ -426,10 +441,10 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
 
 inline void node_procreate(std::list<struct node_info> & recipient, struct node_info & node_parent){
     for(int i = 0; i < node_parent.edges_illegal_new.size(); i++){
-        struct node_info node_son;
+        struct node_info node_son = node_parent;
 
-        node_son.vec_penalty = node_parent.vec_penalty;
-        node_son.edges_illegal = node_parent.edges_illegal;
+        //node_son.vec_penalty = node_parent.vec_penalty;
+        //node_son.edges_illegal = node_parent.edges_illegal;
 
         std::pair<int, int> edge = node_parent.edges_illegal_new[i];
 
@@ -438,12 +453,14 @@ inline void node_procreate(std::list<struct node_info> & recipient, struct node_
     }
 }
 
-void branch_and_bound_breadth(const Matrix cost, int gen){
+void branch_and_bound_breadth(const Matrix cost, struct node_info node_root, int gen){
 
     const int dimension = cost.size();
+    /*
     std::vector<double> vec_penalty_default (dimension, 0);
     struct node_info node_root;
     node_root.vec_penalty = vec_penalty_default;
+    */
     std::list<struct node_info> layer_A;
     std::list<struct node_info> layer_B;
 
@@ -521,12 +538,15 @@ int main(int argc, char** argv) {
     std::vector<double> penalty (dimension, 0); 
     struct node_info node_root;
     node_root.vec_penalty = penalty;
-    upper_bd = primal_bound(cost);
+    //primal_bound = INFINITE;
+    //primal_bound = cost_optimal_get(argv[1]) + 1;
+    primal_bound = primal_bound_calc(cost);
+    s_cost_optimal = primal_bound;
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
     if(!strcmp(breadth_flag, argv[2]))
-        branch_and_bound_breadth(cost, 0);
+        branch_and_bound_breadth(cost, node_root, 0);
     else if(!strcmp(depth_flag, argv[2]))
         branch_and_bound_depth(cost, node_root, 0);
     else{

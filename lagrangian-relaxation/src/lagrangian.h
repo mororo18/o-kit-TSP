@@ -14,7 +14,7 @@ struct node_info {
     bool fertility;
 };
 
-extern double upper_bd;
+extern double primal_bound;
 extern double s_cost_optimal;
 
 void Matrix_penalty_apply(Matrix & cost, std::vector<double> vec);
@@ -23,7 +23,7 @@ std::vector<int> subgrad_calc(const vii & edges, int dimension);
 double step_size_calc(const std::vector<int> & subgrad, double lower_bound, double upper_bound, double epsilon);
 void vec_penalty_update(std::vector<double> & vec_penalty, const std::vector<int> & subgrad, double step_size);
 bool subgrad_validate(const std::vector<int> & subgrad);
-struct node_info lagrangian_dual_solve(const Matrix & cost, struct node_info node_parent);
+void lagrangian_dual_solve(const Matrix & cost, struct node_info & node_parent);
 void cost_restriction(Matrix & cost, const vii & edge_illegal);
 
 #endif
