@@ -23,6 +23,7 @@ instances/dantzig42.tsp:699
 instances/dsj1000.tsp:18659688
 instances/eil51.tsp:426
 instances/eil76.tsp:538
+instances/eil101.tsp:629
 instances/fl417.tsp:11861
 instances/fl1400.tsp:20127
 instances/fl1577.tsp:[22204,22249]
@@ -107,3 +108,4 @@ instances/ulysses22.tsp:7013
 instances/usa13509.tsp:[19947008,20167722]
 instances/vm1084.tsp:239297
 instances/vm1748.tsp:336556
+EOF

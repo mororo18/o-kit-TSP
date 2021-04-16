@@ -21,7 +21,13 @@ int cost_optimal_get(char * instance_name){
     string file;
     ifstream inTSP(path, ios::in);
 
+    int count = 0;
+
     inTSP >> file; while ( file.find((string)instance_name+":") != 0) {
+        if(inTSP.eof()){
+            std::cout << "Cant find optimal data." << std::endl;
+            exit(0);
+        }
         inTSP >> file;
     }
 
@@ -146,6 +152,7 @@ vii tree_nodes_children(const Matrix & cost, vii edges, std::vector<int> parent)
 
     int i_min;
     double cost_min = INFINITE;
+    //double cost_min = 0;
 
     /*
     for(int i = 0; i < parent.size(); i++){
@@ -165,6 +172,7 @@ vii tree_nodes_children(const Matrix & cost, vii edges, std::vector<int> parent)
     //vector_print_pair(kids[i_min], "selected");
     //std::cout << "cost selected "<< parent_costs[i_min] << std::endl;
 
+    //return kids[0];
     return kids[i_min];
 }
 
@@ -343,10 +351,10 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
 
     //exit(0);
 
-    if(obj_value + DBL_EPSILON < s_cost_optimal ){
+    if(obj_value  + 2*TOL  < s_cost_optimal){
         //vector_print(restriction, "restriction");
 
-        ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
+        //ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
         std::vector<int> parents = tree_nodes_degree_max(node_parent.subgrad);
         //int parent = tree_node_degree_max.first;
         int parent_degree = parents[0];
@@ -360,8 +368,8 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
             primal_bound = obj_value;
             std::cout << "current cost  solution  " << obj_value << "\n";
             result = tree_edges;
-            struct node_info node;
-            node.vec_penalty = node_parent.vec_penalty;
+            //struct node_info node;
+            //node.vec_penalty = std::vector<double> (dimension, 1) ;// node_parent.vec_penalty;
             //branch_and_bound_depth(cost, node, 0);
             //exit(0);
         }else if(parent_degree > 2){
@@ -380,6 +388,7 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
 
                 branch_and_bound_depth(cost, node_child, gen_next);
                 //node_children.erase(node_children.begin() + i);
+                //exit(0);
 
             }
         }
@@ -410,9 +419,10 @@ inline void node_solve(struct node_info &node_parent, const Matrix & cost){
     //std::cout << "node solution " <<obj_value << std::endl;
     //if(  10614.6 -  obj_value <= 0 ) exit(0);
 
-    if((obj_value + DBL_EPSILON)  < s_cost_optimal){
+    //if((obj_value - s_cost_optimal) < -DBL_EPSILON ){
+    if(obj_value  + 2*TOL  < s_cost_optimal){
 
-        ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
+        //ii tree_node_degree_max = tree_node_degree_max_find(tree_edges, dimension);
         std::vector<int> parents = tree_nodes_degree_max(node_parent.subgrad);
         int parent_degree = parents[0];
         parents.erase(parents.begin());
@@ -456,11 +466,7 @@ inline void node_procreate(std::list<struct node_info> & recipient, struct node_
 void branch_and_bound_breadth(const Matrix cost, struct node_info node_root, int gen){
 
     const int dimension = cost.size();
-    /*
-    std::vector<double> vec_penalty_default (dimension, 0);
-    struct node_info node_root;
-    node_root.vec_penalty = vec_penalty_default;
-    */
+
     std::list<struct node_info> layer_A;
     std::list<struct node_info> layer_B;
 
@@ -521,8 +527,6 @@ int main(int argc, char** argv) {
     const char * depth_flag = "--depth";
     const char * bound_opt = "-o";
 
-    //srand(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-
     Data * data = new Data(argc, argv[1]);
     data->readData();
     int dimension = data->getDimension();
@@ -535,13 +539,15 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::vector<double> penalty (dimension, 0); 
     struct node_info node_root;
+
+    std::vector<double> penalty (dimension, 0); 
     node_root.vec_penalty = penalty;
-    //primal_bound = INFINITE;
-    //primal_bound = cost_optimal_get(argv[1]) + 1;
-    primal_bound = primal_bound_calc(cost);
-    s_cost_optimal = primal_bound;
+
+    primal_bound = cost_optimal_get(argv[1]) + 1;
+    //primal_bound = primal_bound_calc(cost);
+    //s_cost_optimal = cost_optimal_get(argv[1]) + 1;
+    s_cost_optimal = primal_bound; //cost_optimal_get(argv[1]) + 1;
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
@@ -559,7 +565,9 @@ int main(int argc, char** argv) {
     std::cout << "COST: " << s_cost_optimal << std::endl;
 
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "TIME: " << exec_time / 10e2  << std::endl;
+    std::cout << "TIME: " << (double)exec_time / 10e2  << std::endl;
+
+    std::cout << "Mods : No pai de menor custo\n Organizando vetores por custo\nOpt + 1\nUB = opt + 1" << std::endl;
 
     return 0;
 }

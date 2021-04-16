@@ -129,8 +129,8 @@ void lagrangian_dual_solve(const Matrix & cost, struct node_info & node){
         }
 
         // break condition
-        if(primal_bound < obj_value)
-            break;
+        //if(primal_bound <= obj_value)
+            //break;
         //if(obj_value > s_cost_optimal){
             //break;
         //}
@@ -150,8 +150,12 @@ void lagrangian_dual_solve(const Matrix & cost, struct node_info & node){
         }else
             iteration_sum = 0;
 
-        //if((primal_bound - obj_value_max)/primal_bound < 0.00001)
-            //break;
+        if(primal_bound - obj_value_max <= TOL){
+            std::cout << "break yx" << std::endl;
+            std::cout << obj_value << std::endl;
+            //exit(0);
+            break;
+        }
 
         step_size = step_size_calc(subgrad, obj_value, primal_bound, epsilon);
         //std::cout << "step size   " << step_size << "\n";

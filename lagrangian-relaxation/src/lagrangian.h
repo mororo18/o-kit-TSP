@@ -4,6 +4,8 @@
 #include <vector>
 #include "kruskal.h"
 
+#define TOL 0.00001
+
 struct node_info {
     std::vector<std::pair<int, int>> edges_illegal;
     vii edges_illegal_new;;
