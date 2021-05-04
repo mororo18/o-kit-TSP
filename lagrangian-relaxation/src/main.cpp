@@ -544,10 +544,9 @@ int main(int argc, char** argv) {
     std::vector<double> penalty (dimension, 0); 
     node_root.vec_penalty = penalty;
 
-    primal_bound = cost_optimal_get(argv[1]) + 1;
-    //primal_bound = primal_bound_calc(cost);
-    //s_cost_optimal = cost_optimal_get(argv[1]) + 1;
-    s_cost_optimal = primal_bound; //cost_optimal_get(argv[1]) + 1;
+    //primal_bound = cost_optimal_get(argv[1]) + 1;
+    primal_bound = primal_bound_calc(cost);
+    s_cost_optimal = primal_bound; 
 
     auto t1 = std::chrono::high_resolution_clock::now();
 
@@ -567,7 +566,7 @@ int main(int argc, char** argv) {
     auto exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::cout << "TIME: " << (double)exec_time / 10e2  << std::endl;
 
-    std::cout << "Mods : No pai de menor custo\n Organizando vetores por custo\nOpt + 1\nUB = opt + 1" << std::endl;
+    std::cout << "Mods : No pai de menor custo\n Organizando vetores por custo\nprimal_cost_calc" << std::endl;
 
     return 0;
 }
