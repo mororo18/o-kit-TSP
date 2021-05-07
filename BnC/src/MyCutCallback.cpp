@@ -63,7 +63,7 @@ void MyCutCallback::main()
 	
 	if (cutSetPool.empty() && depth <= 7) {
         // algoritmo exato
-		cutSetPool = MinCut(x_edge, n);
+		//cutSetPool = MinCut(x_edge, n);
 	}
 
 	/***************** Creating the constraints ***************/
