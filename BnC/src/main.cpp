@@ -96,6 +96,7 @@ void STSP_Solve(Data *data, string instanceName, double ub)
     STSP.use(lazyCbk);
     /******************************************************/
 
+
     try{ 
 	    timeBefore = STSP.getTime();
 	    STSP.solve();
