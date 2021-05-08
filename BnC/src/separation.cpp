@@ -74,7 +74,7 @@ void vec_print_dbl(vector<double> vec, string title){
     cout << endl;
 }
 
-void min_cut_of(vector<int> & S_min, double ** x, int n){
+double min_cut_of(vector<int> & S_min, double ** x, int n){
 
     vector<int> S = S_min;
     double cut_min = weight_sum(S[0], x, n);
@@ -85,30 +85,26 @@ void min_cut_of(vector<int> & S_min, double ** x, int n){
 
     while(S.size() < n){
         int v = max_index_get(max_back_vec, S); 
-        //cout << "V " << v << endl;
         S.push_back(v);
 
-        //cout << "cut before " << cut_value << endl;
         cut_value += 2 - 2*max_back_vec[v];
-        //cout << "cut after " << cut_value << endl;
 
-        //vec_print_dbl(max_back_vec, "vec before  ");
         max_back_update(max_back_vec, v, S, x, n);
-        //vec_print_dbl(max_back_vec, "vec after  ");
 
         if(cut_value < cut_min){
             cut_min = cut_value;
             S_min = S;
         }
-
-        //cout << "min cut " << cut_min << endl;
-
     }
 
+    return cut_min;
+
+    /*
     for(int i = 0 ; i < S_min.size(); i++){
         cout << S_min[i] << " ";
     }
     cout << "\n";
+    */
 
 }
 
@@ -158,8 +154,46 @@ vector<vector<int>> MaxBack(double ** x, int n){
     return set_pool;
 }
 
+void V_set_init(vector<vector<int>> & vec, int n){
+    vec.clear();
+
+    for(int i = 0; i < n; i++){
+        vector<int> vertex = {i};
+        vec.push_back(vertex);
+    }
+}
+
+void V_set_merge(vector<vector<int>> & set, int s, int t, double ** x, int n){
+    int a, b;
+
+    if(s < t){
+        a = s;
+        b = t;
+    }
+
+    for(int i = 0; i < set.size(); i++){
+        if(a == set[i][0]){
+            a_i = i;
+        }else if(b == set[i][0]){
+            set.insert(set[a_i].end(), set[i].begin(), set[i].end());
+            set.erase(set.begin() + i);
+        }
+    }
+
+}
+
 vector<vector<int>> MinCut(double ** x, int n){
-    vector<vector<int>> empty;
+    vector<vector<int>> V_set;
+
+
+    while(V_set.size() > 1){
+        vector<int> S_min  = {0};
+        double cut_value = min_cut_of(S_min, x, n);
+
+        int t = S_min[S_min.size() - 1];
+        int s = S_min[S_min.size() - 2];
+        
+    }
 
     return empty;
 }
