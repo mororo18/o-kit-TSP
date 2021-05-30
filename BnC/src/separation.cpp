@@ -414,4 +414,4 @@ vector<vector<int>> MinCut(double ** x, int n){
     int a = rand() % n;
     set_pool = minimum_cut(a, x, n);
     //cout << "tamanho " << set_pool.size() << endl;
-
+}
