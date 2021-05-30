@@ -142,12 +142,12 @@ for line in fin.readlines():
     elif tgt_find: # Else line is cost or time
         num = my_list[1]
 
-        if flag == 0:
-            sum_cost += int(num)
-            flag = 1
-        elif flag == 1:
-            sum_time += float(num)
+        if flag == 1:
+            sum_cost += float(num)
             flag = 0
+        elif flag == 0:
+            sum_time += float(num)
+            flag = 1
 
     isFirst = False
 

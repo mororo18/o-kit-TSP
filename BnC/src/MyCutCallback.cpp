@@ -61,9 +61,14 @@ void MyCutCallback::main()
 	
 	cutSetPool = MaxBack(x_edge, n);
 	
+    //cutSetPool = MinCut(x_edge, n);
+
+    //exit(0);
 	if (cutSetPool.empty() && depth <= 7) {
+    //if(cutSetPool[1][0] != 114){
         // algoritmo exato
 		cutSetPool = MinCut(x_edge, n);
+        //exit(0);
 	}
 
 	/***************** Creating the constraints ***************/

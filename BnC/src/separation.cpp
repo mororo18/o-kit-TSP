@@ -97,7 +97,7 @@ double min_cut_of(vector<int> & S_min, int set_size, double ** x, int n){
 
         max_back_update(max_back_vec, v, S, x);
 
-        if(cut_value < cut_min){
+        if(cut_value < cut_min - DBL_EPSILON){
             cut_min = cut_value;
             S_min = S;
         }
@@ -106,11 +106,11 @@ double min_cut_of(vector<int> & S_min, int set_size, double ** x, int n){
     return cut_min;
 
     /*
-    for(int i = 0 ; i < S_min.size(); i++){
-        cout << S_min[i] << " ";
-    }
-    cout << "\n";
-    */
+       for(int i = 0 ; i < S_min.size(); i++){
+       cout << S_min[i] << " ";
+       }
+       cout << "\n";
+       */
 
 }
 
@@ -133,9 +133,9 @@ vector<vector<int>> MaxBack(double ** x, int n){
     }
 
     vector<vector<int>> set_pool;
-    bool found[n] = {};
-    int vertex;
-    
+    bool found[n] = {false};
+    int vertex=0;
+
     while(!all_known(found, n)){
         for(int i = 0; i < n; i++){
             if(found[i] != true){
@@ -143,8 +143,9 @@ vector<vector<int>> MaxBack(double ** x, int n){
                 break;
             }
         }
-
+        
         vector<int> S_min = {vertex};
+        //vector<int> S_min = {vertex++};
         min_cut_of(S_min, n, x, n);
 
         if(S_min.size() == n)
@@ -156,8 +157,64 @@ vector<vector<int>> MaxBack(double ** x, int n){
         set_pool.push_back(S_min);
     }
 
+    /*
+    for(int i = 0; i < set_pool.size(); i++){
+        for(int j = 0; j < set_pool[i].size(); j++){
+            cout << set_pool[i][j] << " ";
+        }
+        cout << endl;
+        cout << endl;
+    }
+
+        ofstream myfile;
+        myfile.open("matrix3.txt");
+
+        int count = 0;
+        for(int i = 0; i < n; i++){
+            for(int j = i+1; j < n; j++){
+                myfile << x[i][j] << " ";
+                if(x[i][j] > DBL_EPSILON && x[i][j] - 0.5 <= DBL_EPSILON)
+                    count++;
+            }
+
+            myfile << endl;
+        }
+        //myfile << count << " arestas " << endl;
+        myfile.close();
+        */
+        //cout << count << " arestas " << endl;
+
+
+
+    //exit(0);
     
+
     return set_pool;
+}
+
+void matrix_alloc(double *** matrix, int dimension){
+    double ** ptr =  (double**)calloc(dimension, sizeof(double*));
+    test_alloc(ptr);
+    for(int i = 0; i < dimension; i++){
+        ptr[i] =  (double*)calloc(dimension, sizeof(double));
+        test_alloc(ptr[i]);
+    }
+
+    *matrix = ptr;
+}
+
+void matrix_free(double *** ptr, int dimension){
+    double ** ar = *ptr;
+    for(int i = 0; i < dimension; i++)
+        free(ar[i]);
+    free(ar);
+
+    *ptr = NULL;
+}
+
+void matrix_cpy(double ** ptr, double ** src, int n){
+    for(int i = 0; i < n; i++)
+        memcpy(ptr[i], src[i], n * sizeof(double));
 }
 
 void V_set_init(vector<vector<int>> & vec, int n){
@@ -239,24 +296,45 @@ void V_set_merge(vector<vector<int>> & set, int s, int t, double ** x, int n){
 
 }
 
-vector<int> minimum_cut(int a, double ** x, int n){
+vector<int> set_complement(vector<int> set, int n){
+    vector<int> comp;
+    bool mark[n] = {false};
+
+    for(int i = 0; i < set.size(); i++){
+        mark[set[i]] = true;
+    }
+
+    for(int i = 0; i < n; i++){
+        if(mark[i] != true){
+            comp.push_back(i);
+        }
+    }
+
+    return comp;
+}
+
+vector<vector<int>> minimum_cut(int a, double ** x, int n){
     vector<vector<int>> V_set;
+    vector<vector<int>> set_pool;
     V_set_init(V_set, n);
 
-    int count = 0;
+    //double ** x_cpy;
+    //matrix_alloc(&x_cpy, n);
+    //matrix_cpy(x_cpy, x, n);
 
-    vector<int> min_cut_vec ;
+    int count = 0;
+    const int n_half = n / 2;
+    const double cut_violation = 2.0f - 0.00000001;
+
+    vector<int> min_cut_vec;
+    vector<int> cut_vec;
     double cut_min = 999999;
-    int cut;
+    int cut_i;
 
     while(V_set.size() > 1){
-        //if(count++ == 7)
-            //break;
         vector<int> A = {a};
 
         double cut_value = min_cut_phase(A, V_set.size(), x, n); 
-        //vec_print_dbl(A, "A group ");
-
 
         int t = A[A.size() - 1];
         int s = A[A.size() - 2];
@@ -264,55 +342,64 @@ vector<int> minimum_cut(int a, double ** x, int n){
         //cout << "minimum  " << cut_value << endl;
         if(cut_value < cut_min){
             cut_min = cut_value;
-            cut = t;
+            cut_i = t;
 
-            for(int i =0; i < V_set.size(); i++){
-                if(cut == V_set[i][0]){
+            //cout << "cutValue  " << cut_value << endl;
+
+            for(int i = 0; i < V_set.size(); i++){
+                if(cut_i == V_set[i][0]){
                     min_cut_vec = V_set[i];
+                    //cout << "minCut encontrado\n";
                     break;
                 }
             }
-
-            if(cut_min < DBL_EPSILON)
-                break;
         }
 
+        int set_i;
+
+        for(int i = 0; i < V_set.size(); i++){
+            if(t == V_set[i][0]){
+                cut_vec = V_set[i];
+                set_i = i;
+                break;
+            }
+        }
+
+        //vec_print_dbl(cut_vec, "current_vec  ");
+        //cout << "cut value  " << cut_value << endl;
+        if(cut_vec.size() <= n_half && cut_value < cut_violation){ 
+            set_pool.push_back(cut_vec);
+
+        }else if(cut_vec.size() > n_half && cut_value < cut_violation){
+            vector<int> comp = set_complement(cut_vec, n);
+            set_pool.push_back(comp);
+        }
 
         V_set_merge(V_set, s, t, x, n);
-
     }
 
+    //matrix_free(&x_cpy, n);
 
-    return min_cut_vec;
-}
+    /*
+    for(int i = 0; i < set_pool.size(); i++){
+        for(int j = 0; j < set_pool[i].size(); j++){
+            cout << set_pool[i][j] << " ";
+        }
+        cout << endl;
+    }
+    */
 
-void matrix_alloc(double *** matrix, int dimension){
-    double ** ptr =  (double**)calloc(dimension, sizeof(double*));
-    test_alloc(ptr);
-    for(int i = 0; i < dimension; i++){
-        ptr[i] =  (double*)calloc(dimension, sizeof(double));
-        test_alloc(ptr[i]);
+    if(cut_min >= 2.0f - DBL_EPSILON){
+        cout << "(vazio)\nsem violacoes\n";
     }
 
-    *matrix = ptr;
-}
-
-void matrix_free(double *** ptr, int dimension){
-    double ** ar = *ptr;
-    for(int i = 0; i < dimension; i++)
-        free(ar[i]);
-    free(ar);
-
-    *ptr = NULL;
-}
-
-void matrix_cpy(double ** ptr, double ** src, int n){
-    for(int i = 0; i < n; i++)
-        memcpy(ptr[i], src[i], n * sizeof(double));
+    return set_pool;
 }
 
 vector<vector<int>> MinCut(double ** x, int n){
     vector<vector<int>> set_pool;
+
+    //exit(0);
 
     for(int i = 0; i < n; i++){
         for(int j = i+1; j < n; j++){
@@ -322,87 +409,9 @@ vector<vector<int>> MinCut(double ** x, int n){
         }
     }
 
-    vector<int> cut;
+    srand(time(NULL));
 
-    /*
-    double ** x_cpy;
+    int a = rand() % n;
+    set_pool = minimum_cut(a, x, n);
+    //cout << "tamanho " << set_pool.size() << endl;
 
-    matrix_alloc(&x_cpy, n);
-    matrix_cpy(x_cpy, x, n);
-    int v = 0;
-    bool find[n] = {false};
-
-    while(v < n){
-        cut = minimum_cut(v++, x_cpy, n);
-        //vec_print_dbl(cut, "subtour ");
-
-        if(find[cut[0]] == false && cut.size() != 1){
-            find[cut[0]] = true;
-            set_pool.push_back(cut);
-        }
-        matrix_cpy(x_cpy, x, n);
-    }
-
-    //cout << "aqui\n";
-    matrix_free(&x_cpy, n);
-
-
-    bool mark[n] = {false};
-    for(int i = 0; i < set_pool.size(); i++){
-        for(int j = 0; j < set_pool[i].size(); j++){
-            mark[set_pool[i][j]] = true;
-        }
-    }
-
-    vector<int> vec;
-
-    for(int i = 0; i < n; i++){
-        if(mark[i] != true){
-            vec.push_back(i);
-        }
-    }
-
-    set_pool.push_back(vec);
-    */
-
-    
-    cut = minimum_cut((int)(n/2), x, n);
-
-    if(cut.size() == 1){
-        cout << "vazio" <<endl;
-        return set_pool;
-    }
-
-    bool mark[n] = {false};
-
-
-    for(int i = 0; i < cut.size(); i++){
-        mark[cut[i]] = true;
-    }
-
-    vector<int> vec;
-
-    for(int i = 0; i < n; i++){
-        if(mark[i] != true){
-            vec.push_back(i);
-        }
-    }
-
-    set_pool.push_back(cut);
-    set_pool.push_back(vec);
-
-    /*
-    for(int i = 0; i < set_pool.size(); i++){
-        for(int j = 0; j < set_pool[i].size(); j++){
-            cout << set_pool[i][j] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
-    cout << endl;
-    */
-
-    //exit(0);
-
-    return set_pool;
-}
