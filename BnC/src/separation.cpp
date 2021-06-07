@@ -2,12 +2,14 @@
 
 double weight_sum(int vertex, double ** x, int n){
     double sum = 0;
+    
+    // column
     for(int j = vertex + 1; j < n; j++){
         if(x[vertex][j] > DBL_EPSILON)
             sum += x[vertex][j];
     }
 
-    // test
+    // row
     for(int i = 0; i < vertex; i++){
         if(x[i][vertex] > DBL_EPSILON)
             sum += x[i][vertex];
@@ -134,7 +136,7 @@ vector<vector<int>> MaxBack(double ** x, int n){
 
     vector<vector<int>> set_pool;
     bool found[n] = {false};
-    int vertex=0;
+    int vertex;
 
     while(!all_known(found, n)){
         for(int i = 0; i < n; i++){
@@ -145,7 +147,6 @@ vector<vector<int>> MaxBack(double ** x, int n){
         }
         
         vector<int> S_min = {vertex};
-        //vector<int> S_min = {vertex++};
         min_cut_of(S_min, n, x, n);
 
         if(S_min.size() == n)
@@ -157,64 +158,7 @@ vector<vector<int>> MaxBack(double ** x, int n){
         set_pool.push_back(S_min);
     }
 
-    /*
-    for(int i = 0; i < set_pool.size(); i++){
-        for(int j = 0; j < set_pool[i].size(); j++){
-            cout << set_pool[i][j] << " ";
-        }
-        cout << endl;
-        cout << endl;
-    }
-
-        ofstream myfile;
-        myfile.open("matrix3.txt");
-
-        int count = 0;
-        for(int i = 0; i < n; i++){
-            for(int j = i+1; j < n; j++){
-                myfile << x[i][j] << " ";
-                if(x[i][j] > DBL_EPSILON && x[i][j] - 0.5 <= DBL_EPSILON)
-                    count++;
-            }
-
-            myfile << endl;
-        }
-        //myfile << count << " arestas " << endl;
-        myfile.close();
-        */
-        //cout << count << " arestas " << endl;
-
-
-
-    //exit(0);
-    
-
     return set_pool;
-}
-
-void matrix_alloc(double *** matrix, int dimension){
-    double ** ptr =  (double**)calloc(dimension, sizeof(double*));
-    test_alloc(ptr);
-    for(int i = 0; i < dimension; i++){
-        ptr[i] =  (double*)calloc(dimension, sizeof(double));
-        test_alloc(ptr[i]);
-    }
-
-    *matrix = ptr;
-}
-
-void matrix_free(double *** ptr, int dimension){
-    double ** ar = *ptr;
-    for(int i = 0; i < dimension; i++)
-        free(ar[i]);
-    free(ar);
-
-    *ptr = NULL;
-}
-
-void matrix_cpy(double ** ptr, double ** src, int n){
-    for(int i = 0; i < n; i++)
-        memcpy(ptr[i], src[i], n * sizeof(double));
 }
 
 void V_set_init(vector<vector<int>> & vec, int n){
@@ -262,6 +206,8 @@ void V_set_merge(vector<vector<int>> & set, int s, int t, double ** x, int n){
         b = s;
     }
 
+    // merges the vertices
+    // the one with smaller index represents the group
     for(int i = 0; i < set.size(); i++){
         if(a == set[i][0]){
             a_i = i;
@@ -271,7 +217,7 @@ void V_set_merge(vector<vector<int>> & set, int s, int t, double ** x, int n){
         }
     }
 
-    // find common connected vertex to s and t
+    // find common vertex connected to s and t
 
     x[a][b] = 0;
     for(int i = 0; i < set.size(); i++){
@@ -279,6 +225,7 @@ void V_set_merge(vector<vector<int>> & set, int s, int t, double ** x, int n){
         if(v == s)
             continue;
 
+        // merges the edges on the smaller index vertex
         if(edge_from_to(v, s, x) || edge_from_to(v, t, x)){
 
             if(v < a){
@@ -313,23 +260,31 @@ vector<int> set_complement(vector<int> set, int n){
     return comp;
 }
 
-vector<vector<int>> minimum_cut(int a, double ** x, int n){
+vector<vector<int>> MinCut(double ** x, int n){
     vector<vector<int>> V_set;
     vector<vector<int>> set_pool;
-    V_set_init(V_set, n);
 
-    //double ** x_cpy;
-    //matrix_alloc(&x_cpy, n);
-    //matrix_cpy(x_cpy, x, n);
+    srand(time(NULL));
+
+    for(int i = 0; i < n; i++){
+        for(int j = i+1; j < n; j++){
+            if(x[i][j] < DBL_EPSILON &&  x[i][j] > - DBL_EPSILON)
+                x[i][j] = 0.0f;
+
+        }
+    }
 
     int count = 0;
-    const int n_half = n / 2;
-    const double cut_violation = 2.0f - 0.00000001;
+    const double violation_bound = 2.0f - EPSILON;
 
     vector<int> min_cut_vec;
     vector<int> cut_vec;
     double cut_min = 999999;
     int cut_i;
+
+    int a = rand() % n;
+
+    V_set_init(V_set, n);
 
     while(V_set.size() > 1){
         vector<int> A = {a};
@@ -342,43 +297,38 @@ vector<vector<int>> minimum_cut(int a, double ** x, int n){
         //cout << "minimum  " << cut_value << endl;
         if(cut_value < cut_min){
             cut_min = cut_value;
-            cut_i = t;
 
-            //cout << "cutValue  " << cut_value << endl;
+            /*
+            // stores the minCut
+            cut_i = t;
 
             for(int i = 0; i < V_set.size(); i++){
                 if(cut_i == V_set[i][0]){
                     min_cut_vec = V_set[i];
-                    //cout << "minCut encontrado\n";
                     break;
                 }
             }
+            */
         }
-
-        int set_i;
 
         for(int i = 0; i < V_set.size(); i++){
             if(t == V_set[i][0]){
                 cut_vec = V_set[i];
-                set_i = i;
                 break;
             }
         }
 
-        //vec_print_dbl(cut_vec, "current_vec  ");
-        //cout << "cut value  " << cut_value << endl;
-        if(cut_vec.size() <= n_half && cut_value < cut_violation){ 
+        // verifies if the current cut represents a violation of subtour constraint 
+        if(cut_vec.size() <= n / 2 && cut_value < violation_bound){ 
             set_pool.push_back(cut_vec);
 
-        }else if(cut_vec.size() > n_half && cut_value < cut_violation){
+        }else if(cut_vec.size() > n / 2 && cut_value < violation_bound){
             vector<int> comp = set_complement(cut_vec, n);
             set_pool.push_back(comp);
         }
 
         V_set_merge(V_set, s, t, x, n);
     }
-
-    //matrix_free(&x_cpy, n);
 
     /*
     for(int i = 0; i < set_pool.size(); i++){
@@ -394,24 +344,4 @@ vector<vector<int>> minimum_cut(int a, double ** x, int n){
     }
 
     return set_pool;
-}
-
-vector<vector<int>> MinCut(double ** x, int n){
-    vector<vector<int>> set_pool;
-
-    //exit(0);
-
-    for(int i = 0; i < n; i++){
-        for(int j = i+1; j < n; j++){
-            if(x[i][j] < DBL_EPSILON &&  x[i][j] > - DBL_EPSILON)
-                x[i][j] = 0.0f;
-
-        }
-    }
-
-    srand(time(NULL));
-
-    int a = rand() % n;
-    set_pool = minimum_cut(a, x, n);
-    //cout << "tamanho " << set_pool.size() << endl;
 }
