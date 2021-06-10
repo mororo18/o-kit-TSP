@@ -70,6 +70,7 @@ void MyLazyCallback::main()
 		}
 		int RHS = cutSetPool[c].size();
 		cons.push_back(p <= RHS - 1);
+        p.end();
 	}
 	/**********************************************************/
 

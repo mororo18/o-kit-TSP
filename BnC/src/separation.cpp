@@ -294,12 +294,11 @@ vector<vector<int>> MinCut(double ** x, int n){
         int t = A[A.size() - 1];
         int s = A[A.size() - 2];
 
+            /*
         //cout << "minimum  " << cut_value << endl;
         if(cut_value < cut_min ){
-        //if(cut_value < cut_min && cut_value < violation_bound){
             cut_min = cut_value;
 
-            /*
             // stores the minCut
             cut_i = t;
 
@@ -309,8 +308,8 @@ vector<vector<int>> MinCut(double ** x, int n){
                     break;
                 }
             }
-            */
         }
+            */
 
         for(int i = 0; i < V_set.size(); i++){
             if(t == V_set[i][0]){
