@@ -295,7 +295,8 @@ vector<vector<int>> MinCut(double ** x, int n){
         int s = A[A.size() - 2];
 
         //cout << "minimum  " << cut_value << endl;
-        if(cut_value < cut_min){
+        if(cut_value < cut_min ){
+        //if(cut_value < cut_min && cut_value < violation_bound){
             cut_min = cut_value;
 
             /*
@@ -331,17 +332,28 @@ vector<vector<int>> MinCut(double ** x, int n){
     }
 
     /*
-    for(int i = 0; i < set_pool.size(); i++){
-        for(int j = 0; j < set_pool[i].size(); j++){
-            cout << set_pool[i][j] << " ";
-        }
-        cout << endl;
-    }
-    */
-
     if(cut_min >= 2.0f - DBL_EPSILON){
         cout << "(vazio)\nsem violacoes\n";
     }
+    */
+
+    /*
+    set_pool.clear();
+
+    if(!min_cut_vec.empty()){
+        set_pool.push_back(min_cut_vec);
+        //if(!min_cut_vec.empty());
+        set_pool.push_back(set_complement(min_cut_vec, n));
+
+        for(int i = 0; i < set_pool.size(); i++){
+            for(int j = 0; j < set_pool[i].size(); j++){
+                cout << set_pool[i][j] << " ";
+            }
+            cout << endl;
+        }
+
+    }
+    */
 
     return set_pool;
 }

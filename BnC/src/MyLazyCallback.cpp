@@ -43,6 +43,8 @@ void MyLazyCallback::main()
 			x_edge[i][j] = x_vals[l++];
 		}
 	}
+
+    x_vals.end();
 	
 	//cutSetPool = MinCut(x_edge, n);
 
