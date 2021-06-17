@@ -401,7 +401,7 @@ void branch_and_bound_depth(const Matrix cost, struct node_info node_parent, int
 
 // =========  Breadth Search Functions BEGIN ========= 
 
-inline void node_solve(struct node_info &node_parent, const Matrix & cost){
+inline void node_solve(struct node_info & node_parent, const Matrix & cost){
 
     const int dimension = cost.size();
     
@@ -508,6 +508,52 @@ void branch_and_bound_breadth(const Matrix cost, struct node_info node_root, int
 
 // =========  Breadth Search Functions END ========= 
 
+// =========  Best-First Search Functions BEGIN ========= 
+
+bool operator<(const node_info & a, const node_info & b){
+    return a.cost > b.cost - DBL_EPSILON;
+}
+
+bool still_fertil(struct node_info & node){
+    return node.cost < (s_cost_optimal - DBL_EPSILON);
+}
+
+void branch_and_bound_best(const Matrix cost, struct node_info node_root){
+
+    std::priority_queue<struct node_info> tree;
+
+    node_solve(node_root, cost);
+    tree.push(node_root);
+
+    while(!tree.empty()){
+        struct node_info senior = tree.top();
+        tree.pop();
+
+        //std::cout << "fertilidade  " << senior.fertility <<  std::endl << "Custo  " << senior.cost << std::endl;
+        if(!still_fertil(senior)){
+            continue;
+        }
+
+        //std::cout << "Left  " << tree.size() << std::endl;
+
+        std::list<struct node_info> progeny;
+        node_procreate(progeny, senior);
+
+        while(!progeny.empty()){
+            struct node_info junior = progeny.front();
+            progeny.pop_front();
+
+            node_solve(junior, cost);
+
+            if(junior.fertility == true)
+                tree.push(junior);
+        }
+
+    }
+}
+
+// =========  Best-first Search Functions END ========= 
+
 double cost_calc(vii & edges, Matrix & cost){
     double total = 0;
 
@@ -525,6 +571,7 @@ int main(int argc, char** argv) {
 
     const char * breadth_flag = "--breadth";
     const char * depth_flag = "--depth";
+    const char * best_flag = "--best";
     const char * bound_opt = "-o";
 
     Data * data = new Data(argc, argv[1]);
@@ -554,6 +601,8 @@ int main(int argc, char** argv) {
         branch_and_bound_breadth(cost, node_root, 0);
     else if(!strcmp(depth_flag, argv[2]))
         branch_and_bound_depth(cost, node_root, 0);
+    else if(!strcmp(best_flag, argv[2]))
+        branch_and_bound_best(cost, node_root);
     else{
         std::cout << "[!!] Error: Search Mode not identified\n" << std::endl;
         exit(-1);

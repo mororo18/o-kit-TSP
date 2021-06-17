@@ -151,8 +151,8 @@ void lagrangian_dual_solve(const Matrix & cost, struct node_info & node){
             iteration_sum = 0;
 
         if(primal_bound - obj_value_max <= TOL){
-            std::cout << "break yx" << std::endl;
-            std::cout << obj_value << std::endl;
+            //std::cout << "break yx" << std::endl;
+            //std::cout << obj_value << std::endl;
             //exit(0);
             break;
         }
