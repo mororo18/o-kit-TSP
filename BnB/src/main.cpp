@@ -324,7 +324,7 @@ bool operator<(const node_info2 & a, const node_info2 & b){
     return a.s_cost > b.s_cost - DBL_EPSILON;
 }
 
-bool still_fertil(struct node_info2 & node){
+bool still_fertile(struct node_info2 & node){
     return node.s_cost < (s_cost_optimal - DBL_EPSILON);
 }
 
@@ -342,7 +342,7 @@ void branch_and_bound_best(Data * data, double ** cost){
         tree.pop();
 
         //std::cout << "fertilidade  " << senior.fertility <<  std::endl << "Custo  " << senior.s_cost << std::endl;
-        if(!still_fertil(senior)){
+        if(!still_fertile(senior)){
             continue;
         }
 
