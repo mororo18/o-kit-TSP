@@ -71,7 +71,7 @@ int hungarian_imax(int a, int b) {
     return (a<b)?b:a;
 }
 
-int hungarian_init(hungarian_problem_t* p, int** cost_matrix, int rows, int cols, int mode) {
+int hungarian_init(hungarian_problem_t* p, double** cost_matrix, int rows, int cols, int mode) {
 
     alignas(alignof(int)) int i,j, org_cols, org_rows;
     int max_cost;

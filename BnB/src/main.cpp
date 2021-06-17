@@ -2,6 +2,7 @@
 #include <chrono>
 #include <vector>
 #include <list>
+#include <queue>
 #include <algorithm>
 #include <cstring>
 #include <cfloat>
@@ -19,11 +20,12 @@ struct node_info {
 struct node_info2 {
     std::vector<std::pair<int, int>> edges_illegal;
     std::vector<int> subtour;
+    double s_cost;
     bool fertility;
 };
 
-int cost_optimal;
-int s_cost_optimal = INFINITE;
+double cost_optimal;
+double s_cost_optimal = INFINITE;
 std::vector<int> s;
 
 int cost_optimal_get(char * instance_name){
@@ -44,7 +46,7 @@ int cost_optimal_get(char * instance_name){
     return value;
 }
 
-void matrix_print(int ** ar, int dimension){
+void matrix_print(double ** ar, int dimension){
     for(int i = 0; i < dimension; i++){
         for(int j = 0; j < dimension; j++){
             std::cout << ar[i][j] << " ";
@@ -54,19 +56,19 @@ void matrix_print(int ** ar, int dimension){
     }
 }
 
-void cost_matrix_alloc(int *** matrix, int dimension){
-    int ** ptr =  (int**)calloc(dimension, sizeof(int*));
+void cost_matrix_alloc(double *** matrix, int dimension){
+    double ** ptr =  (double**)calloc(dimension, sizeof(double*));
     hungarian_test_alloc(ptr);
     for(int i = 0; i < dimension; i++){
-        ptr[i] =  (int*)calloc(dimension, sizeof(int));
+        ptr[i] =  (double*)calloc(dimension, sizeof(double));
         hungarian_test_alloc(ptr[i]);
     }
 
     *matrix = ptr;
 }
 
-inline void cost_matrix_free(int *** ptr, int dimension){
-    int ** ar = *ptr;
+inline void cost_matrix_free(double *** ptr, int dimension){
+    double ** ar = *ptr;
     for(int i = 0; i < dimension; i++)
         free(ar[i]);
     free(ar);
@@ -74,10 +76,10 @@ inline void cost_matrix_free(int *** ptr, int dimension){
     *ptr = NULL;
 }
 
-void cost_restriction(std::vector<std::pair<int, int>> &edges, int ** cost_old, int ** cost_new, int dimension){
+void cost_restriction(std::vector<std::pair<int, int>> &edges, double ** cost_old, double ** cost_new, int dimension){
     // cpy the old to the new matrix of costs
     for(int i = 0; i < dimension; i++)
-        memcpy(cost_new[i], cost_old[i], dimension*sizeof(int));  
+        memcpy(cost_new[i], cost_old[i], dimension*sizeof(double));  
 
     // apply the restrictions
     for(int i = 0; i < edges.size(); i++){
@@ -156,20 +158,20 @@ void subtour_lower_get(std::vector<int> &subtour, hungarian_problem_t * solution
 
 // =========  Depth Search Function BEGIN ========= 
 
-void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root, int gen){
+void branch_and_bound_depth(Data *data, double ** cost, struct node_info node_root, int gen){
 
     hungarian_problem_t p;
     const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
     const int dimension = data->getDimension();
 
-    int ** cost_new;
+    double ** cost_new;
     cost_matrix_alloc(&cost_new, dimension);
     cost_restriction(node_root.edges_illegal, cost, cost_new, dimension);
 
     hungarian_init(&p, cost_new, dimension, dimension, mode); 
     cost_matrix_free(&cost_new, dimension);
 
-    int obj_value = hungarian_solve(&p);
+    double obj_value = hungarian_solve(&p);
 
     if(obj_value <= s_cost_optimal){
 
@@ -180,6 +182,7 @@ void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root,
         if(subtour.size() >= dimension){ 
             // valid solution
             s_cost_optimal = obj_value;
+            std::cout << "BestLB  " << s_cost_optimal << std::endl;
             s = subtour;
         }else {
             int gen_next = gen + 1;
@@ -208,19 +211,23 @@ void branch_and_bound_depth(Data *data, int ** cost, struct node_info node_root,
 
 // =========  Breadth Search Functions BEGIN ========= 
 
-inline void node_solve(struct node_info2 &node, int **cost, int dimension){
+inline void node_solve(struct node_info2 & node, double **cost, int dimension){
     
     const int mode = HUNGARIAN_MODE_MINIMIZE_COST;
     hungarian_problem_t p;
 
-    int ** cost_new;
+    double ** cost_new;
     cost_matrix_alloc(&cost_new, dimension);
     cost_restriction(node.edges_illegal, cost, cost_new, dimension);
 
     hungarian_init(&p, cost_new, dimension, dimension, mode); 
     cost_matrix_free(&cost_new, dimension);
 
-    int node_cost = hungarian_solve(&p);
+    double node_cost = hungarian_solve(&p);
+
+
+    node.s_cost = node_cost;
+
 
     if(node_cost <= s_cost_optimal){
 
@@ -256,7 +263,7 @@ inline void node_procreate(std::list<struct node_info2> & recipient, struct node
     }
 }
 
-void branch_and_bound_breadth(Data * data, int ** cost){
+void branch_and_bound_breadth(Data * data, double ** cost){
 
     const int dimension = data->getDimension();
     struct node_info2 node_root;
@@ -266,6 +273,7 @@ void branch_and_bound_breadth(Data * data, int ** cost){
     layer_A.push_back(node_root);
 
     while(!layer_A.empty() || !layer_B.empty()){
+        std::cout << "Left  " << layer_A.size() << std::endl;
 
         while(!layer_A.empty()){
 
@@ -279,6 +287,7 @@ void branch_and_bound_breadth(Data * data, int ** cost){
             layer_A.pop_front();
             
         }
+        std::cout << "Left  " << layer_B.size() << std::endl;
 
         while(!layer_B.empty()){
 
@@ -299,18 +308,79 @@ void branch_and_bound_breadth(Data * data, int ** cost){
 
 // =========  Breadth Search Functions END ========= 
 
+/*
+struct node_info2 {
+    std::vector<std::pair<int, int>> edges_illegal;
+    std::vector<int> subtour;
+    double s_cost;
+    bool fertility;
+};
+
+*/
+
+// =========  Best-First Search Functions BEGIN ========= 
+
+bool operator<(const node_info2 & a, const node_info2 & b){
+    return a.s_cost > b.s_cost - DBL_EPSILON;
+}
+
+bool still_fertil(struct node_info2 & node){
+    return node.s_cost < (s_cost_optimal - DBL_EPSILON);
+}
+
+void branch_and_bound_best(Data * data, double ** cost){
+
+    const int dimension = data->getDimension();
+    struct node_info2 node_root;
+    std::priority_queue<struct node_info2> tree;
+
+    node_solve(node_root, cost, dimension);
+    tree.push(node_root);
+
+    while(!tree.empty()){
+        struct node_info2 senior = tree.top();
+        tree.pop();
+
+        //std::cout << "fertilidade  " << senior.fertility <<  std::endl << "Custo  " << senior.s_cost << std::endl;
+        if(!still_fertil(senior)){
+            continue;
+        }
+
+        std::cout << "Left  " << tree.size() << std::endl;
+
+        std::list<struct node_info2> progeny;
+        node_procreate(progeny, senior);
+
+        while(!progeny.empty()){
+            struct node_info2 junior = progeny.front();
+            progeny.pop_front();
+
+            node_solve(junior, cost, dimension);
+
+            if(junior.fertility == true)
+                tree.push(junior);
+        }
+
+    }
+
+
+}
+
+// =========  Best-First Search Functions END ========= 
+
 int main(int argc, char** argv) {
 
     const char * breadth_flag = "--breadth";
     const char * depth_flag = "--depth";
+    const char * best_flag = "--best";
     const char * bound_opt = "-o";
 
     Data * data = new Data(argc, argv[1]);
     data->readData();
 
-    int **cost = new int*[data->getDimension()];
+    double **cost = new double*[data->getDimension()];
     for (int i = 0; i < data->getDimension(); i++){
-        cost[i] = new int[data->getDimension()];
+        cost[i] = new double[data->getDimension()];
         for (int j = 0; j < data->getDimension(); j++){
             cost[i][j] = data->getDistance(i, j);
         }
@@ -329,10 +399,13 @@ int main(int argc, char** argv) {
         branch_and_bound_breadth(data, cost);
     else if(!strcmp(depth_flag, argv[2]))
         branch_and_bound_depth(data, cost, node_initial, 0);
+    else if(!strcmp(best_flag, argv[2]))
+        branch_and_bound_best(data, cost);
     else{
         std::cout << "[!!] Error: Search Mode not identified\n" << std::endl;
         exit(-1);
     }
+
 
     auto t2 = std::chrono::high_resolution_clock::now();
 

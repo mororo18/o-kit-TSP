@@ -16,6 +16,7 @@ usage()
     echo " "
     echo "      -b      Breadth Search"
     echo "      -d      Depth Search"
+    echo "      -m      Best Search"
     echo " "
 }
 
@@ -24,7 +25,7 @@ smaller=0
 mode=-1
 t=1
 
-while getopts "bdl: s: t:" opt; do
+while getopts "bdml: s: t:" opt; do
     case ${opt} in
 	l)
 	    larger=$OPTARG
@@ -40,6 +41,9 @@ while getopts "bdl: s: t:" opt; do
 	    ;;
 	d)
 	    mode=1
+	    ;;
+	m)
+	    mode=2
 	    ;;
 	*)
 	    usage
@@ -68,6 +72,11 @@ fi
 if [[ $mode -eq 1 ]]
 then
     mode="--depth"
+fi
+
+if [[ $mode -eq 2 ]]
+then
+    mode="--best"
 fi
 
 shift $((OPTIND-1))
