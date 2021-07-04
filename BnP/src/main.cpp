@@ -12,21 +12,12 @@ int main(int argc, char * argv[]){
     Master      M  (data.getItemQnt());
     SubProblem  kp (data.getWeights(), data.getBinCapacity(), data.getItemQnt());
 
-    M.solve();
-    cout << "objValue " << kp.solve(M.getDuals()) << endl;
-    M.addColumn(kp.getColumn());
-    
-    M.solve();
-    cout << "objValue " << kp.solve(M.getDuals()) << endl;
-    //kp.solve(M.getDuals());
-    cout << "opa" << endl;
-
-
+    double obj_value;
     while(true){
-        M.solve();
-        double obj_value = kp.solve(M.getDuals());
+        obj_value = M.solve();
+        double pricing = kp.solve(M.getDuals());
 
-        if(obj_value >= 0.0 - 0.000000001)
+        if(pricing >= 0.0 - 0.000000001)
             break;
 
         vector<int> column;
@@ -34,7 +25,8 @@ int main(int argc, char * argv[]){
         M.addColumn(column);
     }
 
-    M.printResult();
+    //M.printResult();
+    cout << "ObjValue: " << obj_value << endl;
 
 
     /*IloNumArray * duals = M.getDuals();

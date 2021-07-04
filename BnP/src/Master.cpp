@@ -30,7 +30,7 @@ void Master::build(){
 
 }
 
-void Master::solve(){
+double Master::solve(){
 
     IloCplex BPP(this->model);
     BPP.setParam(IloCplex::Param::TimeLimit, 1*60*60);
@@ -57,6 +57,8 @@ void Master::solve(){
         //cout << (*this->duals)[i] << " ";
     }
     cout << endl;
+
+    return BPP.getObjValue();
 }
 
 void Master::addColumn(vector<int> col_vec){

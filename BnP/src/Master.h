@@ -15,7 +15,7 @@ class Master {
         void addColumn(vector<int>);
         //vector<int> getDuals();
         IloNumArray* getDuals();
-        void solve();
+        double solve();
         void printResult();
         
     private:
