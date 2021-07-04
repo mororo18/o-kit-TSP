@@ -1,6 +1,7 @@
 #include "auxFunctions.h"
 #include "Data.h"
 #include "Master.h"
+#include "SubProblem.h"
 #include <ilcplex/ilocplex.h>
 
 int main(int argc, char * argv[]){
@@ -11,16 +12,75 @@ int main(int argc, char * argv[]){
     Master M(data.getItemQnt());
     M.solve();
 
+    SubProblem kp (data.getWeights(), data.getBinCapacity(), data.getItemQnt());
+    kp.solve(M.getDuals());
+    //kp.solve(M.getDuals());
+    cout << "opa" << endl;
 
 
+    /*IloNumArray * duals = M.getDuals();
+
+    int dimension = data.getItemQnt();
+
+    IloEnv          env;
+    IloModel model(env);
+
+    IloBoolVarArray x (env, dimension);
+    // add variables
+    for(int i = 0; i < dimension; i++){
+        char name[100];
+        sprintf(name, "x_%d", i);
+        x[i].setName(name);
+        model.add(x[i]);
+    }
+
+    // add OF
+    IloExpr obj(env);
+
+    for(int i = 0; i < dimension; ++i){
+        obj += (*duals)[i] * x[i];
+    }
+    model.add(IloMaximize(env, obj));
+
+    // add cstrs
+    {
+    IloRange cstr;
+    IloExpr LHS(env);
+    for(int i = 0; i < dimension; i++){
+        LHS += data.getWeight(i) * x[i];
+    }
+    cstr = (LHS <= data.getBinCapacity());
+    model.add(cstr);
+    }
+    
+    IloCplex KP(model);
+    KP.setParam(IloCplex::Param::TimeLimit, 60);
+    KP.setParam(IloCplex::Param::Threads, 1);
+
+
+    double after, before;
+
+    try{ 
+        before = KP.getTime();
+        KP.solve();
+        after = KP.getTime();
+    }
+    catch(IloException& e){
+        std::cout << e;
+    }
+    for(int i = 0; i < dimension; i++){
+        cout << KP.getValue(x[i]) << " ";
+    }
+    cout << "opa" << endl;
+    env.end();
+    cout << "opa" << endl;
+
+    */
     /*
     cout << data.getItemQnt() << endl;
 
     cout << data.getBinCapacity() << endl;
 
-    for(int i=0; i < data.getItemQnt(); i++){
-        cout << data.getWeight(i) << endl;
-    }
 
     IloEnv env;
     IloModel model(env);

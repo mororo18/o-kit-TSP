@@ -61,6 +61,10 @@ double Data::getBinCapacity(){
     return bin_C;
 }
 
+double * Data::getWeights(){
+    return weight;
+}
+
 double Data::getWeight(int i){
     return weight[i];
 }

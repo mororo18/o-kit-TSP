@@ -1,6 +1,6 @@
 #include "Master.h"
 
-Master::Master(int size) : env(), model(env), duals(env), objF(), cstr(){
+Master::Master(int size) : env(), model(env), duals(new IloNumArray(env)), objF(), cstr(){
     this->initial_size = size;
     this->col_qnt = size;
 
@@ -41,17 +41,19 @@ void Master::solve(){
     double before;
 
     try{
-        after = BPP.getTime();
-        BPP.solve();
         before = BPP.getTime();
+        BPP.solve();
+        after = BPP.getTime();
     }catch(IloException& e){
         cout << e;
     }
 
-    printResults(BPP, "instancia", after-before);
-    BPP.getDuals(this->duals, this->cstr);
+    printResults(BPP, "instancia", before-after);
+    BPP.getDuals((*this->duals), this->cstr);
+    //d_vec.clear();
     for(int i = 0; i < this->initial_size; i++){
-        cout << this->duals[i] << " ";
+        cout << (*this->duals)[i] << " ";
+        //d_vec.push_back((*this->duals)[i]);
     }
     cout << endl;
 }
@@ -74,7 +76,9 @@ void Master::addColumn(vector<int> col_vec){
     this->model.add(var_new);
 }
 
-IloNumArray Master::getDuals(){
+//vector<int> Master::getDuals(){
+IloNumArray * Master::getDuals(){
+    //return d_vec;
     return duals;
 }
 

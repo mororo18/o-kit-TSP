@@ -15,6 +15,7 @@ class Data {
         int getItemQnt();
         double getBinCapacity();
         double getWeight(int);
+        double * getWeights();
         void loadData();
 
 

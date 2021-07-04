@@ -13,7 +13,8 @@ class Master {
         Master(int);
         ~Master();
         void addColumn(vector<int>);
-        IloNumArray getDuals();
+        //vector<int> getDuals();
+        IloNumArray* getDuals();
         void solve();
         
     private:
@@ -21,13 +22,14 @@ class Master {
         IloModel        model;
         IloObjective    objF;
         IloRangeArray   cstr;
-        IloNumArray     duals;
+        IloNumArray *   duals;
         int             initial_size;
         int             col_qnt;
 
 
         void build();
         void getColumn();
+        vector<int> d_vec;
         vector<int> getColumn(IloNumVar, IloRangeArray, int);
         
 };
