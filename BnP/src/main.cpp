@@ -9,13 +9,32 @@ int main(int argc, char * argv[]){
 
     data.loadData();
 
-    Master M(data.getItemQnt());
-    M.solve();
+    Master      M  (data.getItemQnt());
+    SubProblem  kp (data.getWeights(), data.getBinCapacity(), data.getItemQnt());
 
-    SubProblem kp (data.getWeights(), data.getBinCapacity(), data.getItemQnt());
-    kp.solve(M.getDuals());
+    M.solve();
+    cout << "objValue " << kp.solve(M.getDuals()) << endl;
+    M.addColumn(kp.getColumn());
+    
+    M.solve();
+    cout << "objValue " << kp.solve(M.getDuals()) << endl;
     //kp.solve(M.getDuals());
     cout << "opa" << endl;
+
+
+    while(true){
+        M.solve();
+        double obj_value = kp.solve(M.getDuals());
+
+        if(obj_value >= 0.0 - 0.000000001)
+            break;
+
+        vector<int> column;
+        column = kp.getColumn();
+        M.addColumn(column);
+    }
+
+    M.printResult();
 
 
     /*IloNumArray * duals = M.getDuals();

@@ -4,6 +4,7 @@
 #include <ilcplex/ilocplex.h>
 #include <vector>
 #include <iostream>
+#include "auxFunctions.h"
 
 using namespace std;
 
@@ -12,7 +13,8 @@ class SubProblem {
         SubProblem(double*, double, int);
         ~SubProblem();
         //vector<int> solve(vector<int>);
-        vector<int> solve(IloNumArray*);
+        double solve(IloNumArray*);
+        vector<int> getColumn();
     private:
         double *        weights;
         int             dimension;
@@ -22,6 +24,8 @@ class SubProblem {
         IloModel model;
         IloExpr LHS;
         IloBoolVarArray x ;
+
+        vector<int> column;
 };
 
 #endif

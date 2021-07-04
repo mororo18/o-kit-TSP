@@ -1,6 +1,6 @@
 #include "SubProblem.h"
 
-SubProblem::SubProblem(double * w, double binC, int n): env(), model(env), LHS(env), x(env, n){
+SubProblem::SubProblem(double * w, double binC, int n): env(), model(env), LHS(env), x(env, n), column(n){
 
     //this->weights = w;
     weights = (double*)calloc(n, sizeof(double));
@@ -28,10 +28,11 @@ SubProblem::SubProblem(double * w, double binC, int n): env(), model(env), LHS(e
 
 SubProblem::~SubProblem(){
     free(weights);
+    env.end();
 }
 
 //vector<int> SubProblem::solve(vector<int> duals) {
-vector<int> SubProblem::solve(IloNumArray * duals){
+double SubProblem::solve(IloNumArray * duals){
 
 
     // add OF
@@ -61,14 +62,21 @@ vector<int> SubProblem::solve(IloNumArray * duals){
         std::cout << e;
     }
 
-    vector<int> column (this->dimension);
     for(int i = 0; i < this->dimension; i++){
         column[i] = KP.getValue(x[i]);
         cout << column[i] << " ";
     }
     cout << endl;
+
+    printResults(KP, "sacola", after-before);
+    double obj_value = -(KP.getObjValue() - 1);
+
     model.remove(f);
     f.end();
 
+    return obj_value;
+}
+
+vector<int> SubProblem::getColumn(){
     return column;
 }

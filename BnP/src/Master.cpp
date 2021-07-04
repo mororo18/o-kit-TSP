@@ -12,6 +12,7 @@ Master::Master(int size) : env(), model(env), duals(new IloNumArray(env)), objF(
 
 Master::~Master(){
     this->env.end();
+    delete duals;
 }
 
 void Master::build(){
@@ -49,11 +50,11 @@ void Master::solve(){
     }
 
     printResults(BPP, "instancia", before-after);
+    //getSolution(BPP);
     BPP.getDuals((*this->duals), this->cstr);
-    //d_vec.clear();
+
     for(int i = 0; i < this->initial_size; i++){
-        cout << (*this->duals)[i] << " ";
-        //d_vec.push_back((*this->duals)[i]);
+        //cout << (*this->duals)[i] << " ";
     }
     cout << endl;
 }
@@ -62,7 +63,7 @@ void Master::addColumn(vector<int> col_vec){
     IloNumColumn col = this->objF(1);
     
     for(int i = 0; i < initial_size; i++){
-        if(col_vec[i] > 0.5){
+        if(col_vec[i] > 0.00000005){
             col += this->cstr[i](1);
         }
     }
@@ -76,9 +77,23 @@ void Master::addColumn(vector<int> col_vec){
     this->model.add(var_new);
 }
 
-//vector<int> Master::getDuals(){
+void Master::getSolution(IloCplex cplex){
+    IloExpr vars = objF.getExpr();
+
+    this->solution.clear();
+    for(IloExpr::LinearIterator it = vars.getLinearIterator(); it.ok(); ++it){
+        double var_value = cplex.getValue(it.getVar());   
+        if(var_value > 0.0005){
+            solution.push_back(it.getVar());
+            cout << /*it.getVar() << " " <<*/ var_value << " ";
+        }
+    }
+    cout << endl;
+    //exit(1);
+
+}
+
 IloNumArray * Master::getDuals(){
-    //return d_vec;
     return duals;
 }
 
@@ -96,9 +111,31 @@ vector<int> Master::getColumn(IloNumVar var, IloRangeArray cstr, int n){
             }
 
         column.push_back(coef);
-        cout << coef << endl;    
+        //cout << coef << endl;    
     }
 
     return column;
 }
 
+void Master::printResult(){
+    vector<vector<int>> bins;
+    for(auto & var: solution){
+        vector<int> column;// = getColumn(var, cstr, initial_size);
+        //if(
+        column = getColumn(var, cstr, initial_size);
+
+        vector<int> bin;
+        for(int i = 0; i < column.size(); i++){
+            if(column[i] >= 1 - 0.3){
+                bin.push_back(i+1); 
+                //cout << i+1 << " ";
+            }
+        }
+        //cout << endl;
+        //exit(1);
+
+        bins.push_back(bin);
+    }
+
+    //cout << "Total bins: " << bins.size() << endl;
+}
