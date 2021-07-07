@@ -9,24 +9,40 @@ int main(int argc, char * argv[]){
 
     data.loadData();
 
+    /*
+    cout << data.getItemQnt() << endl;
+    cout << data.getBinCapacity() << endl;
+    for(int i = 0; i < data.getItemQnt(); i++){
+        cout << i << " " << data.getWeight(i) << endl;
+    }
+    cout << endl;
+    */
+    //exit(1);
+    
+
     Master      M  (data.getItemQnt());
     SubProblem  kp (data.getWeights(), data.getBinCapacity(), data.getItemQnt());
 
+    clock_t begin = clock();
     double obj_value;
+    double pricing;
     while(true){
         obj_value = M.solve();
-        double pricing = kp.solve(M.getDuals());
+        pricing = kp.solve(M.getDuals());
 
-        if(pricing >= 0.0 - 0.000000001)
+        if(pricing >= -0.000001)
             break;
 
-        vector<int> column;
-        column = kp.getColumn();
+        vector<int> column = kp.getColumn();
         M.addColumn(column);
     }
+    clock_t end = clock();
 
     //M.printResult();
     cout << "ObjValue: " << obj_value << endl;
+    cout << "Pricing Value " << pricing << endl;
+    cout << "Time: " << (double)(end-begin)/CLOCKS_PER_SEC << endl;;
+
 
 
     /*IloNumArray * duals = M.getDuals();

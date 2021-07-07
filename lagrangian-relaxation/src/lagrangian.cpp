@@ -12,9 +12,17 @@ void cost_restriction(Matrix & cost, const vii & edge_illegal){
 }
 
 void Matrix_penalty_apply(Matrix & cost, std::vector<double> vec){
+    /*
+    for(int j = 1; j < cost.size(); j++){
+        
+        cost[0][j] -= vec[j];
+        cost[j][0] -= vec[j];
+    }
+    */
+
     for(int i = 0; i < cost.size(); i++){
         double vec_i = vec[i];
-        for(int j = i; j < cost.size(); j++){
+        for(int j = i+1; j < cost.size(); j++){
             cost[i][j] -= vec_i + vec[j];
             cost[j][i] -= vec_i + vec[j];
         }

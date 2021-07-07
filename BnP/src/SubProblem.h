@@ -10,15 +10,15 @@ using namespace std;
 
 class SubProblem {
     public:
-        SubProblem(double*, double, int);
+        SubProblem(int*, int, int);
         ~SubProblem();
         //vector<int> solve(vector<int>);
         double solve(IloNumArray*);
         vector<int> getColumn();
     private:
-        double *        weights;
-        int             dimension;
-        double          C;
+        int *   weights;
+        int     dimension;
+        int     C;
 
         IloEnv          env;
         IloModel model;

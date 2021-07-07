@@ -35,6 +35,8 @@ double Master::solve(){
     IloCplex BPP(this->model);
     BPP.setParam(IloCplex::Param::TimeLimit, 1*60*60);
     BPP.setParam(IloCplex::Param::Threads, 1);
+    BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
+    BPP.setOut(env.getNullStream());
 
     BPP.exportModel("model.lp");
 
@@ -49,14 +51,15 @@ double Master::solve(){
         cout << e;
     }
 
-    printResults(BPP, "instancia", before-after);
+    //printResults(BPP, "instancia", before-after);
     //getSolution(BPP);
+    (*this->duals).clear();
     BPP.getDuals((*this->duals), this->cstr);
 
     for(int i = 0; i < this->initial_size; i++){
         //cout << (*this->duals)[i] << " ";
     }
-    cout << endl;
+    //cout << endl;
 
     return BPP.getObjValue();
 }
@@ -65,14 +68,19 @@ void Master::addColumn(vector<int> col_vec){
     IloNumColumn col = this->objF(1);
     
     for(int i = 0; i < initial_size; i++){
-        if(col_vec[i] > 0.00000005){
+        /*
+        if(col_vec[i] > 0.0005){
             col += this->cstr[i](1);
         }
+        */
+
+        col += this->cstr[i](col_vec[i]);
     }
 
     char var_name[100];
     sprintf(var_name, "b_%u", this->col_qnt++);
 
+    //IloNumVar var_new (col, 0, 1);
     IloNumVar var_new (col, 0, IloInfinity);
     var_new.setName(var_name);
 
@@ -87,10 +95,10 @@ void Master::getSolution(IloCplex cplex){
         double var_value = cplex.getValue(it.getVar());   
         if(var_value > 0.0005){
             solution.push_back(it.getVar());
-            cout << /*it.getVar() << " " <<*/ var_value << " ";
+            //cout << /*it.getVar() << " " <<*/ var_value << " ";
         }
     }
-    cout << endl;
+    //cout << endl;
     //exit(1);
 
 }
@@ -98,7 +106,6 @@ void Master::getSolution(IloCplex cplex){
 IloNumArray * Master::getDuals(){
     return duals;
 }
-
 
 vector<int> Master::getColumn(IloNumVar var, IloRangeArray cstr, int n){
     vector<int> column;

@@ -1,10 +1,10 @@
 #include "SubProblem.h"
 
-SubProblem::SubProblem(double * w, double binC, int n): env(), model(env), LHS(env), x(env, n), column(n){
+SubProblem::SubProblem(int * w, int binC, int n): env(), model(env), LHS(env), x(env, n), column(n){
 
     //this->weights = w;
-    weights = (double*)calloc(n, sizeof(double));
-    memcpy(weights, w, n*sizeof(double));
+    weights = (int*)calloc(n, sizeof(int));
+    memcpy(weights, w, n*sizeof(int));
     this->dimension = n;
     this->C = binC;
 
@@ -41,7 +41,9 @@ double SubProblem::solve(IloNumArray * duals){
     for(int i = 0; i < this->dimension; ++i){
         //obj += duals[i] * x[i];
         obj += (*duals)[i] * x[i];
+        //cout << (*duals)[i] << " ";
     }
+    //cout << endl;
 
     IloObjective f = IloMaximize(this->env, obj);
     this->model.add(f);
@@ -49,7 +51,9 @@ double SubProblem::solve(IloNumArray * duals){
     IloCplex KP(model);
     KP.setParam(IloCplex::Param::TimeLimit, 60);
     KP.setParam(IloCplex::Param::Threads, 1);
-
+    KP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
+    KP.setOut(env.getNullStream());
+    //KP.exportModel("kp.lp");
 
     double after, before;
 
@@ -63,15 +67,21 @@ double SubProblem::solve(IloNumArray * duals){
     }
 
     for(int i = 0; i < this->dimension; i++){
-        column[i] = KP.getValue(x[i]);
-        cout << column[i] << " ";
+        double value = KP.getValue(x[i]);
+        if(value >= 0.9)
+            column[i] = 1;
+        else
+            column[i] = 0;
+
+        //cout << column[i] << " ";
     }
-    cout << endl;
+    //cout << endl;
 
-    printResults(KP, "sacola", after-before);
-    double obj_value = -(KP.getObjValue() - 1);
+    //printResults(KP, "sacola", after-before);
+    double obj_value = 1.0 - KP.getObjValue();
 
-    model.remove(f);
+    //K.exportModel("kp.lp");
+    obj.end();
     f.end();
 
     return obj_value;

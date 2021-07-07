@@ -37,7 +37,7 @@ void Data::loadData(){
     bin_C = stod(line);
 
     // get the weights of the itens
-    weight = new double[n];
+    weight = new int[n];
 
     int count = 0;
     while(std::getline(file, line)){
@@ -57,14 +57,14 @@ int Data::getItemQnt(){
     return n;
 }
 
-double Data::getBinCapacity(){
+int Data::getBinCapacity(){
     return bin_C;
 }
 
-double * Data::getWeights(){
+int * Data::getWeights(){
     return weight;
 }
 
-double Data::getWeight(int i){
+int Data::getWeight(int i){
     return weight[i];
 }

@@ -13,16 +13,16 @@ class Data {
         Data(int, char *);
         ~Data();
         int getItemQnt();
-        double getBinCapacity();
-        double getWeight(int);
-        double * getWeights();
+        int getBinCapacity();
+        int getWeight(int);
+        int * getWeights();
         void loadData();
 
 
     private:
         int n;
-        double * weight;
-        double bin_C;
+        int * weight;
+        int bin_C;
 
         std::string instance_name;
 };
