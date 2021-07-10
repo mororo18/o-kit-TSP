@@ -38,7 +38,7 @@ double Master::solve(){
     BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
     BPP.setOut(env.getNullStream());
 
-    BPP.exportModel("model.lp");
+    //BPP.exportModel("model.lp");
 
     double after;
     double before;
@@ -52,7 +52,7 @@ double Master::solve(){
     }
 
     //printResults(BPP, "instancia", before-after);
-    //getSolution(BPP);
+    getSolution(BPP);
     (*this->duals).clear();
     BPP.getDuals((*this->duals), this->cstr);
 
@@ -91,10 +91,12 @@ void Master::getSolution(IloCplex cplex){
     IloExpr vars = objF.getExpr();
 
     this->solution.clear();
+    this->solution_values.clear();
     for(IloExpr::LinearIterator it = vars.getLinearIterator(); it.ok(); ++it){
         double var_value = cplex.getValue(it.getVar());   
-        if(var_value > 0.0005){
+        if(var_value > 0.00000005){
             solution.push_back(it.getVar());
+            solution_values.push_back(var_value);
             //cout << /*it.getVar() << " " <<*/ var_value << " ";
         }
     }
@@ -107,23 +109,29 @@ IloNumArray * Master::getDuals(){
     return duals;
 }
 
-vector<int> Master::getColumn(IloNumVar var, IloRangeArray cstr, int n){
+vector<int> Master::getColumn(IloNumVar & var){
     vector<int> column;
 
-    for(int i = 0; i < n; i++){
+    for(int i = 0; i < initial_size; i++){
         int coef = 0;
-        for (IloExpr::LinearIterator it = IloExpr(cstr[i].getExpr()).getLinearIterator(); it.ok();++it)
+        for (IloExpr::LinearIterator it = IloExpr(this->cstr[i].getExpr()).getLinearIterator(); it.ok();++it)
             if(it.getVar().getName() == var.getName()){
-                //cout << it.getCoef() << endl;
                 coef = 1;
                 break;
             }
 
         column.push_back(coef);
-        //cout << coef << endl;    
     }
 
     return column;
+}
+
+vector<double> Master::getSolutionValues(){
+    return solution_values;
+}
+
+vector<IloNumVar> Master::getSolution(){
+    return solution;
 }
 
 void Master::printResult(){
@@ -131,7 +139,7 @@ void Master::printResult(){
     for(auto & var: solution){
         vector<int> column;// = getColumn(var, cstr, initial_size);
         //if(
-        column = getColumn(var, cstr, initial_size);
+        column = getColumn(var);
 
         vector<int> bin;
         for(int i = 0; i < column.size(); i++){

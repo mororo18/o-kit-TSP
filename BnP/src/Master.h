@@ -17,6 +17,9 @@ class Master {
         IloNumArray* getDuals();
         double solve();
         void printResult();
+        vector<int> getColumn(IloNumVar &);
+        vector<IloNumVar> getSolution();
+        vector<double> getSolutionValues();
         
     private:
         IloEnv          env;
@@ -24,16 +27,15 @@ class Master {
         IloObjective    objF;
         IloRangeArray   cstr;
         vector<IloNumVar>  solution;
+        vector<double>  solution_values;
         IloNumArray *   duals;
         int             initial_size;
         int             col_qnt;
 
 
         void build();
-        void getColumn();
         void getSolution(IloCplex);
         vector<int> d_vec;
-        vector<int> getColumn(IloNumVar, IloRangeArray, int);
         
 };
 #endif 

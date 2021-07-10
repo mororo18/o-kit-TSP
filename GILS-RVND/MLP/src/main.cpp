@@ -199,6 +199,7 @@ inline void subseq_info_load(std::vector<std::vector<struct subseq>> &seq, std::
         seq[i][i].T = 0;
         seq[i][i].C = 0;
         seq[i][i].W = !(i == 0);
+        std::vector<int> p = {1, 8, 9, 11, 5, 4, 12, 13, 7, 6, 3, 14, 2, 10, 1};
         for(j = i+1; j < dim; j++){
             a = j-1;
             seq[i][j].T = c[s[a]][s[j]] + seq[i][a].T ;
@@ -206,6 +207,7 @@ inline void subseq_info_load(std::vector<std::vector<struct subseq>> &seq, std::
             seq[i][j].W = j + k ;
 
         }
+
     }
 }
 
@@ -590,7 +592,7 @@ void GILS_RVND(int Imax, int Iils){
         cost_sl = subseq_info[0][dimension].C - DBL_EPSILON;
         if(cost_sl < cost_final - DBL_EPSILON || i == 0){
             s_final.clear();
-            s_final =  s;
+            s_final =  sl;
             cost_final = cost_sl;
         }
 
@@ -600,8 +602,14 @@ void GILS_RVND(int Imax, int Iils){
         std::cout << "\tCurrent search time: "<< search_t / 10e5<< std::endl;
         std::cout << "\tCurrent search time average: "<< (search_t_average / (i+1)) / 10e5 << std::endl;
 
+        std::cout << "SOLUCAO: ";
+        for(int i = 0; i < s.size(); i++){
+            std::cout << s_final[i] -1 << " ";
+        }
+        std::cout << std::endl;
+
     }
-    //std::cout << "COST: " << cost_final << std::endl;
+    std::cout << "Dimension: " << dimension << std::endl;
     printf("COST: %.2lf\n", cost_final);
 }
 

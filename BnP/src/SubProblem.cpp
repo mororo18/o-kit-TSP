@@ -1,12 +1,15 @@
 #include "SubProblem.h"
 
-SubProblem::SubProblem(int * w, int binC, int n): env(), model(env), LHS(env), x(env, n), column(n){
+SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude, vector<pair<int, int>> enforce): env(), model(env), LHS(env), x(env, n), column(n){
 
     //this->weights = w;
     weights = (int*)calloc(n, sizeof(int));
     memcpy(weights, w, n*sizeof(int));
     this->dimension = n;
     this->C = binC;
+
+    this->cstr_exclude = exclude;
+    this->cstr_enforce = enforce;
 
     // add variables
     for(int i = 0; i < this->dimension; i++){
@@ -16,6 +19,24 @@ SubProblem::SubProblem(int * w, int binC, int n): env(), model(env), LHS(env), x
         model.add(x[i]);
     }
 
+    /*
+    for(int i = 0; i < cstr_exclude.size(); i++){
+        int item_a = cstr_exclude[i].first;
+        int item_b = cstr_exclude[i].second;
+
+        this->weights[item_a] = this->C + 1;
+        this->weights[item_b] = this->C + 1;
+    }
+
+    for(int i = 0; i < cstr_enforce.size(); i++){
+        int item_a = cstr_enforce[i].first;
+        int item_b = cstr_enforce[i].second;
+
+        this->weights[item_a] = 0;
+        this->weights[item_b] = 0;
+    }
+    */
+
     // add cstrs
     IloRange cstr;
     for(int i = 0; i < this->dimension; i++){
@@ -24,11 +45,45 @@ SubProblem::SubProblem(int * w, int binC, int n): env(), model(env), LHS(env), x
     cstr = (LHS <= this->C);
     model.add(cstr);
     
+    // branching cstrs
+        IloExpr exp_a (env);
+        IloExpr exp_b (env);
+    for(int i = 0; i < cstr_exclude.size(); i++){
+        IloRange cstr_branch_a;
+        IloRange cstr_branch_b;
+        int item_a = cstr_exclude[i].first;
+        int item_b = cstr_exclude[i].second;
+        exp_a += x[item_a];
+        exp_b += x[item_b];
+        cstr_branch_a = (exp_a == 0);
+        cstr_branch_b = (exp_b == 0);
+        model.add(cstr_branch_a);
+        model.add(cstr_branch_b);
+        exp_a.clear();
+        exp_b.clear();
+    }
+
+    for(int i = 0; i < cstr_enforce.size(); i++){
+        IloRange cstr_branch_a;
+        IloRange cstr_branch_b;
+        int item_a = cstr_enforce[i].first;
+        int item_b = cstr_enforce[i].second;
+        exp_a += x[item_a];
+        exp_b += x[item_b];
+        cstr_branch_a = (exp_a == 1);
+        cstr_branch_b = (exp_b == 1);
+        model.add(cstr_branch_a);
+        model.add(cstr_branch_b);
+        exp_a.clear();
+        exp_b.clear();
+    }
 }
 
 SubProblem::~SubProblem(){
     free(weights);
-    env.end();
+    this->env.end();
+    cstr_enforce.clear();
+    cstr_exclude.clear();
 }
 
 //vector<int> SubProblem::solve(vector<int> duals) {
