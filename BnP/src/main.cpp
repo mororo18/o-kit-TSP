@@ -35,6 +35,8 @@ void solution_load(struct node_info & node, Master & M){
         node.columns.push_back(column);
     }
 
+    cout << count << " " << solution.size() << endl;
+
     if(count >= solution.size() - 2*DBL_EPSILON)
         node.feasibility = true;
     else
@@ -66,6 +68,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
             break;
 
         colunas++;
+        cout << "coluna  " << colunas << endl;
 
         vector<bool> column = KP.getColumn();
         BPP.addColumn(column);
@@ -153,7 +156,7 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
 void search_depth(struct node_info & node, Master & M, Data & data){
     column_generation(node, M, data);
 
-    if(node.value  < upper_bd - DBL_EPSILON){
+    if(node.value  < upper_bd - 2*DBL_EPSILON){
         if(node.feasibility == true){
             //cout << "aue"<< endl;
             node_best = node;
@@ -190,10 +193,10 @@ void search_depth(struct node_info & node, Master & M, Data & data){
             node_son_B.enforce.push_back(m_frac);
 
             cout << endl << " BRANCH Enforce "<<endl;
-            //M.enforce(m_frac);
+            M.enforce(m_frac);
             search_depth(node_son_B, M, data);
             //exit(1);
-            //M.reinsert(m_frac);
+            M.reinsert(m_frac);
         }
     }
 }

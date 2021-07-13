@@ -55,7 +55,7 @@ double Master::solve(){
     BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
     BPP.setOut(env.getNullStream());
 
-    BPP.exportModel("model.lp");
+    //BPP.exportModel("model.lp");
 
     double after;
     double before;
@@ -64,8 +64,8 @@ double Master::solve(){
         before = BPP.getTime();
         BPP.solve();
         after = BPP.getTime();
-    }catch(IloException& e){
-        cout << e;
+    }catch(const IloException& e){
+        cerr << e;
     }
 
     //printResults(BPP, "instancia", before-after);
@@ -160,15 +160,16 @@ void Master::enforce(pair<int, int> m_pair){
     int a = m_pair.first; 
     int b = m_pair.second; 
 
-    cout << "A size " << A.size() << endl;
+    //cout << "A size " << A.size() << endl;
+    cout << "enforce"<< endl;
 
     for(int j = initial_size; j < A.size(); j++){
         if(this->var_standby_flag[j] == 0 && (A[j][a] == 0 && A[j][b] == 0)){
             //removeVar(var_vec[j]);
-            cout << "aqui 1" << endl;
+            //cout << "aqui 1" << endl;
             //this->model.remove(var_vec[j]);
             this->var_standby_flag[j] = 1;
-            cout << var_vec[j] << endl;    
+            //cout << var_vec[j] << endl;    
             var_vec[j].end();
             var_standby.push_back(make_pair(m_pair, j));
         }
@@ -186,16 +187,22 @@ void Master::exclude(pair<int, int> m_pair){
     int a = m_pair.first; 
     int b = m_pair.second; 
 
-    cout << "A size " << A.size() << endl;
+    //cout << "A size " << A.size() << endl;
+    for(IloExpr::LinearIterator it = IloExpr(objF.getExpr()).getLinearIterator(); it.ok(); ++it){
+        //cout << it.getVar() << " ";
+    }
+    //cout << endl;
+    cout << "exclude"<< endl;
+
     for(int j = initial_size; j < A.size(); j++){
         if(this->var_standby_flag[j] == 0 && A[j][a] == 1 && A[j][b] == 1){
             //removeVar(var_vec[j]);
-            cout << "aqui 1" << endl;
+            //cout << "aqui 1" << endl;
             //this->model.remove(var_vec[j]);
             this->var_standby_flag[j] = 1;
-            cout << var_vec[j] << endl;    
+            //cout << var_vec[j] << endl;    
             var_vec[j].end();
-            cout << "aqui 2" << endl;
+            //cout << "aqui 2" << endl;
             var_standby.push_back(make_pair(m_pair, j));
         }
     }
@@ -207,29 +214,42 @@ inline bool operator==(const pair<int, int> & A, const pair<int, int> & B){
 }
 
 void Master::reinsert(pair<int, int> m_pair){
+    cout <<"reinsertion"<< endl;
 
-    for(int i = 0; i < var_standby.size(); i++){
+    for(int i = var_standby.size() -1; i >= 0; i--){
+        cout << "opaaa" << endl;
         if(m_pair == var_standby[i].first){
+            cout << "opaaa !!" << endl;
             int var_index = var_standby[i].second;
             IloNumColumn col = this->objF(1);
 
             for(int j = 0; j < initial_size; j++){
                 col += this->cstr[i](this->A[var_index][i]);
             }
+            cout << "opaaa 2" << endl;
 
-            char var_name[100];
+            char var_name[200];
             sprintf(var_name, "b_%u", var_index);
 
+            cout << "opaaa 23" << endl;
+            // TODO: problem de memoria aqui
             IloNumVar var_new (col, 0, IloInfinity);
+            cout << "opaaa 223" << endl;
             var_new.setName(var_name);
-            cout << var_name << endl;
 
+            cout << "opaaa 3" << endl;
             this->model.add(var_new);
+            cout << "opaaa 4" << endl;
 
+            cout << "ape" << endl;
             var_vec[var_index] = var_new;
             var_standby_flag[var_index] = 0;
+
+            var_standby.erase(var_standby.begin() + i);
+            cout << "dep" << endl;
         }
     }
+    cout <<"reinsertion pos"<< endl;
 }
 
 void Master::printResult(){
@@ -243,7 +263,6 @@ void Master::printResult(){
         for(int i = 0; i < column.size(); i++){
             if(column[i] == 1){
                 bin.push_back(i+1); 
-                //cout << i+1 << " ";
             }
         }
         //cout << endl;

@@ -129,12 +129,20 @@ double SubProblem::solve(IloNumArray duals){
         KP.solve();
         after = KP.getTime();
     }
-    catch(IloException& e){
-        std::cout << e;
+    catch(const IloException& e){
+        cerr << e;
     }
 
+    //cout << "opa" << endl;
     for(int i = 0; i < this->dimension; i++){
-        double value = KP.getValue(x[i]);
+        double value = 0;
+        try{ 
+            value = KP.getValue(x[i]);
+        }
+        catch(const IloException& e){
+            cerr << e;
+        }
+
         if(value >= 0.9)
             column[i] = 1;
         else
