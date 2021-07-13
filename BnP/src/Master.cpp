@@ -74,7 +74,15 @@ double Master::solve(){
     BPP.getDuals(this->duals, this->cstr);
 
     double obj = BPP.getObjValue();
+
+    if(BPP.getStatus() == IloAlgorithm::Infeasible)
+        feasibility = false;
+    else
+        feasibility = true;
+
+    //cout << BPP.getAlgorithm() << endl;
     BPP.end();
+
     return obj;
 }
 
@@ -164,7 +172,7 @@ void Master::enforce(pair<int, int> m_pair){
     cout << "enforce"<< endl;
 
     for(int j = initial_size; j < A.size(); j++){
-        if(this->var_standby_flag[j] == 0 && (A[j][a] == 0 && A[j][b] == 0)){
+        if(this->var_standby_flag[j] == 0 && ((A[j][a] == 1 && A[j][b] == 0) || (A[j][a] == 0 && A[j][b] == 1))){
             //removeVar(var_vec[j]);
             //cout << "aqui 1" << endl;
             //this->model.remove(var_vec[j]);
@@ -174,6 +182,8 @@ void Master::enforce(pair<int, int> m_pair){
             var_standby.push_back(make_pair(m_pair, j));
         }
     }
+
+    cout << "enforce end"<< endl;
 }
 
 /*
@@ -187,11 +197,6 @@ void Master::exclude(pair<int, int> m_pair){
     int a = m_pair.first; 
     int b = m_pair.second; 
 
-    //cout << "A size " << A.size() << endl;
-    for(IloExpr::LinearIterator it = IloExpr(objF.getExpr()).getLinearIterator(); it.ok(); ++it){
-        //cout << it.getVar() << " ";
-    }
-    //cout << endl;
     cout << "exclude"<< endl;
 
     for(int j = initial_size; j < A.size(); j++){
@@ -201,11 +206,17 @@ void Master::exclude(pair<int, int> m_pair){
             //this->model.remove(var_vec[j]);
             this->var_standby_flag[j] = 1;
             //cout << var_vec[j] << endl;    
+            try{
             var_vec[j].end();
+            }catch(IloException & e){
+                cerr << e;
+            }
             //cout << "aqui 2" << endl;
             var_standby.push_back(make_pair(m_pair, j));
         }
     }
+
+    cout << "after"<< endl;
     
 }
 
@@ -216,40 +227,53 @@ inline bool operator==(const pair<int, int> & A, const pair<int, int> & B){
 void Master::reinsert(pair<int, int> m_pair){
     cout <<"reinsertion"<< endl;
 
-    for(int i = var_standby.size() -1; i >= 0; i--){
-        cout << "opaaa" << endl;
+    for(int i = 0; i < var_standby.size(); i++){
+        //cout << "opaaa" << endl;
         if(m_pair == var_standby[i].first){
-            cout << "opaaa !!" << endl;
+            //cout << "opaaa !!" << endl;
+            //cout << "Mpair fisrt  " << m_pair.first << endl;
+            //cout << "Vstandby fisrt  " << var_standby[i].first.first << endl;
+            
             int var_index = var_standby[i].second;
+            //cout << "Var index " << var_index << endl;
             IloNumColumn col = this->objF(1);
 
             for(int j = 0; j < initial_size; j++){
-                col += this->cstr[i](this->A[var_index][i]);
+                col += this->cstr[j](this->A[var_index][j]);
+                //cout << this->A[var_index][j] << " ";
+
             }
-            cout << "opaaa 2" << endl;
+            //cout << endl;
+            //cout << "opaaa 2" << endl;
 
             char var_name[200];
             sprintf(var_name, "b_%u", var_index);
 
-            cout << "opaaa 23" << endl;
+            //cout << "opaaa 23" << endl;
             // TODO: problem de memoria aqui
             IloNumVar var_new (col, 0, IloInfinity);
-            cout << "opaaa 223" << endl;
+            //cout << "opaaa 223" << endl;
             var_new.setName(var_name);
 
-            cout << "opaaa 3" << endl;
+            //cout << "opaaa 3" << endl;
             this->model.add(var_new);
-            cout << "opaaa 4" << endl;
+            //cout << "opaaa 4" << endl;
 
-            cout << "ape" << endl;
+            //cout << "ape" << endl;
             var_vec[var_index] = var_new;
             var_standby_flag[var_index] = 0;
 
             var_standby.erase(var_standby.begin() + i);
-            cout << "dep" << endl;
+            if(i < var_standby.size() - 1)
+                i--;
+            //cout << "dep" << endl;
         }
     }
-    cout <<"reinsertion pos"<< endl;
+    //cout <<"reinsertion pos"<< endl;
+}
+
+bool Master::getStatus(){
+    return this->feasibility;
 }
 
 void Master::printResult(){

@@ -23,6 +23,7 @@ class Master {
         void enforce(pair<int, int>);
         void exclude(pair<int, int>);
         void reinsert(pair<int, int>);
+        bool getStatus();
         
     private:
         IloEnv              env;
@@ -38,6 +39,7 @@ class Master {
         IloNumArray         duals;
         int                 initial_size;
         int                 col_qnt;
+        bool                feasibility;
 
 
         void build();

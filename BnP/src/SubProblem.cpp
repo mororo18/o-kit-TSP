@@ -80,9 +80,10 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
         IloRange cstr_branch_b;
         int item_a = cstr_enforce[i].first;
         int item_b = cstr_enforce[i].second;
-        exp_a += x[item_a] + x[item_b];
+        exp_a += x[item_a] - x[item_b];
         //exp_b += x[item_b];
-        cstr_branch_a = (exp_a == 2);
+        cstr_branch_a = (exp_a == 0);
+        //cstr_branch_a = (x[item_a] <= x[item_b]);
         //cstr_branch_b = (exp_b == 1);
         model.add(cstr_branch_a);
         //model.add(cstr_branch_b);

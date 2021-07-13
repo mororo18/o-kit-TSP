@@ -28,16 +28,14 @@ void solution_load(struct node_info & node, Master & M){
     vector<IloNumVar> solution = M.getSolution();
     node.lambda_solution = M.getSolutionValues();
 
-    double count = 0;
     for(int i = 0; i < solution.size(); i++){
-        count += node.lambda_solution[i];
         vector<bool> column = M.getColumn(solution[i]);
         node.columns.push_back(column);
     }
 
-    cout << count << " " << solution.size() << endl;
+    cout << node.value << " " << solution.size() << endl;
 
-    if(count >= solution.size() - 2*DBL_EPSILON)
+    if(node.value >= solution.size() - 2*DBL_EPSILON)
         node.feasibility = true;
     else
         node.feasibility = false;
@@ -53,6 +51,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
     double obj_value;
     double pricing;
 
+    cout << "ANTES" << endl;
     while(true){
         obj_value = BPP.solve();
         //cout << "crnt obj " << obj_value << endl;
@@ -68,11 +67,12 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
             break;
 
         colunas++;
-        cout << "coluna  " << colunas << endl;
 
         vector<bool> column = KP.getColumn();
         BPP.addColumn(column);
+
     }
+    cout << "DEPOIS" << endl;
 
     cout << obj_value << endl;
     cout << colunas << " Colunas" << endl;
@@ -149,14 +149,14 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
         }
         //cout << endl;
     }
-    //cout << diff_min << " com  " << item_a << " e " << item_b << endl;
+    cout << diff_min << " com  " << item_a << " e " << item_b << endl;
     return make_pair(item_a, item_b);
 }
 
 void search_depth(struct node_info & node, Master & M, Data & data){
     column_generation(node, M, data);
 
-    if(node.value  < upper_bd - 2*DBL_EPSILON){
+    if(node.value - DBL_EPSILON <= upper_bd - 1 ){
         if(node.feasibility == true){
             //cout << "aue"<< endl;
             node_best = node;
@@ -180,10 +180,6 @@ void search_depth(struct node_info & node, Master & M, Data & data){
             node_son_A.exclude.push_back(m_frac);
 
             cout << endl << " BRANCH Exclude "<<endl;
-            M.exclude(m_frac);
-            search_depth(node_son_A, M, data);
-            M.reinsert(m_frac);
-
             // enforce
 
             struct node_info node_son_B;
@@ -192,11 +188,16 @@ void search_depth(struct node_info & node, Master & M, Data & data){
 
             node_son_B.enforce.push_back(m_frac);
 
-            cout << endl << " BRANCH Enforce "<<endl;
             M.enforce(m_frac);
             search_depth(node_son_B, M, data);
-            //exit(1);
             M.reinsert(m_frac);
+
+
+            M.exclude(m_frac);
+            search_depth(node_son_A, M, data);
+            M.reinsert(m_frac);
+
+            cout << endl << " BRANCH Enforce "<<endl;
         }
     }
 }
@@ -227,6 +228,19 @@ int main(int argc, char * argv[]){
     cout << "Solution  " << node_best.value << endl;
 
     cout << "Time: " << (double)(end-begin)/CLOCKS_PER_SEC << endl;;
+
+    vector<vector<int>> bins;
+    for(int i = 0; i < node_best.columns.size(); i++){
+        vector<int> bin;
+        for(int j = 0; j < node_best.columns[i].size(); j++){
+            if(node_best.columns[i][j]){
+                bin.push_back(j);
+                cout << j << " ";
+            }
+        }
+        cout << endl;
+        bins.push_back(bin);
+    }
 
     return 0;
 
