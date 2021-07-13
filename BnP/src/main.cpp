@@ -10,11 +10,12 @@
 #define BEST_BD 2
 
 double upper_bd = DBL_MAX; 
+int colunas = 0;
 
 struct node_info {
     //vector<vector<int>> solution;
     vector<double> lambda_solution;
-    vector<vector<int>> columns;
+    vector<vector<bool>> columns;
     vector<pair<int, int>> exclude;
     vector<pair<int, int>> enforce;
     double value;
@@ -30,22 +31,21 @@ void solution_load(struct node_info & node, Master & M){
     double count = 0;
     for(int i = 0; i < solution.size(); i++){
         count += node.lambda_solution[i];
-        vector<int> column = M.getColumn(solution[i]);
+        vector<bool> column = M.getColumn(solution[i]);
         node.columns.push_back(column);
     }
 
-    if(count >= solution.size() - DBL_EPSILON)
+    if(count >= solution.size() - 2*DBL_EPSILON)
         node.feasibility = true;
     else
         node.feasibility = false;
 
 }
 
-void column_generation(struct node_info & node, Data & data){
-    //vector<pair<int, int>> test = {make_pair(18, 39)};
+void column_generation(struct node_info & node, Master & BPP, Data & data){
+    vector<pair<int, int>> test = {make_pair(18, 39)};
 
-    Master      BPP  (data.getItemQnt());
-    //SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), test, node.enforce);
+    //SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, test);
     SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
 
     double obj_value;
@@ -55,19 +55,29 @@ void column_generation(struct node_info & node, Data & data){
         obj_value = BPP.solve();
         //cout << "crnt obj " << obj_value << endl;
         pricing = KP.solve(BPP.getDuals());
+        //cout << "crnt prcing " << pricing << endl;
+        IloNumArray dual = BPP.getDuals();
+        for(int i = 0; i < data.getItemQnt(); i++){
+            //cout << dual[i] << " ";
+        }
+        //cout << endl;
 
         if(pricing >= -0.000001)
             break;
 
-        vector<int> column = KP.getColumn();
+        colunas++;
+
+        vector<bool> column = KP.getColumn();
         BPP.addColumn(column);
     }
 
     cout << obj_value << endl;
+    cout << colunas << " Colunas" << endl;
 
-    //if(node.enforce.size() == 1)
+    //if(node.exclude.size() == 5)
         //exit(1);
 
+    //exit(1);
     //if(node.exclude.empty() && !node.enforce.empty())
         //exit(1);
 
@@ -88,10 +98,10 @@ void column_generation(struct node_info & node, Data & data){
     cout << "auq" << endl;
 }
 
-pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<int>> columns){
+pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<bool>> columns){
     int n = columns[0].size();
     double pair_value[n][n];
-    memset(pair_value, 0, sizeof(double)*n*n);
+    memset(pair_value, 0.0, sizeof(double)*n*n);
 
     for(int k = 0; k < var_value.size(); k++){
         if(var_value[k] < 1.0 - DBL_EPSILON && var_value[k] > DBL_EPSILON){
@@ -140,52 +150,59 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
     return make_pair(item_a, item_b);
 }
 
-void search_depth(struct node_info & node, Data & data){
-    column_generation(node, data);
-    cout << "eu" << endl;
+void search_depth(struct node_info & node, Master & M, Data & data){
+    column_generation(node, M, data);
 
-    if(node.value < upper_bd - DBL_EPSILON){
+    if(node.value  < upper_bd - DBL_EPSILON){
         if(node.feasibility == true){
-            cout << "aue"<< endl;
+            //cout << "aue"<< endl;
             node_best = node;
             upper_bd = node.value;
+            //exit(1);
         }else{
             // branching rule
-            cout << "pee" << endl;
+            //cout << "pee" << endl;
             pair<int, int> m_frac = get_most_fractional_pair(node.lambda_solution, node.columns);
-            
-            cout << "paee" << endl;
+            node.columns.clear(); 
+            node.lambda_solution.clear(); 
+            //cout << "paee" << endl;
 
             // exclude 
             struct node_info node_son_A;
             node_son_A.exclude = node.exclude;
             node_son_A.enforce = node.enforce;
 
+
+            //cout << "paee2" << endl;
+            node_son_A.exclude.push_back(m_frac);
+
+            cout << endl << " BRANCH Exclude "<<endl;
+            M.exclude(m_frac);
+            search_depth(node_son_A, M, data);
+            M.reinsert(m_frac);
+
+            // enforce
+
             struct node_info node_son_B;
             node_son_B.exclude = node.exclude;
             node_son_B.enforce = node.enforce;
 
-            cout << "paee2" << endl;
-            node_son_A.exclude.push_back(m_frac);
             node_son_B.enforce.push_back(m_frac);
 
-            cout << endl << " BRANCH Exclude "<<endl;
-            search_depth(node_son_A, data);
-            //exit(1);
-
-            // enforce
-
             cout << endl << " BRANCH Enforce "<<endl;
-            search_depth(node_son_B, data);
+            //M.enforce(m_frac);
+            search_depth(node_son_B, M, data);
+            //exit(1);
+            //M.reinsert(m_frac);
         }
     }
 }
 
-void branch_and_price(Data & data, int opt){
+void branch_and_price(Master & M, Data & data, int opt){
     struct node_info node_root;
     switch (opt){
         case DEPTH:
-            search_depth(node_root, data);
+            search_depth(node_root, M, data);
             break;
         case BREADTH:
             break;
@@ -200,7 +217,8 @@ int main(int argc, char * argv[]){
     data.loadData();
 
     clock_t begin = clock();
-    branch_and_price(data, DEPTH);
+    Master  BPP (data.getItemQnt());
+    branch_and_price(BPP, data, DEPTH);
     clock_t end = clock();
 
     cout << "Solution  " << node_best.value << endl;

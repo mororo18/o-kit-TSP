@@ -62,9 +62,7 @@ int Data::getBinCapacity(){
 }
 
 int * Data::getWeights(){
-    int * p = (int*) calloc(n, sizeof(int));
-    memcpy(p, weight, sizeof(int)*n);
-    return p;
+    return weight;
 }
 
 int Data::getWeight(int i){

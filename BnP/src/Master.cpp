@@ -1,6 +1,6 @@
 #include "Master.h"
 
-Master::Master(int size) : env(), model(env), duals(new IloNumArray(env)), objF(), cstr(){
+Master::Master(int size) : env(), model(env), duals(env), objF(), cstr(){
     this->initial_size = size;
     this->col_qnt = size;
 
@@ -12,7 +12,7 @@ Master::Master(int size) : env(), model(env), duals(new IloNumArray(env)), objF(
 
 Master::~Master(){
     this->env.end();
-    delete duals;
+    //delete duals;
 }
 
 void Master::build(){
@@ -26,7 +26,24 @@ void Master::build(){
 
         var.setName(var_name);
         this->model.add(var);
+
+        this->var_vec.push_back(var);
+        this->var_standby_flag.push_back(0);
+        vector<bool> col(initial_size, 0);
+        col[i] = 1;
+        this->A.push_back(col);
     }
+
+    /*
+    for(int i = 0; i < initial_size; i++){
+        for(int j = 0; j < initial_size; j++){
+            cout << A[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    exit(1);
+    */
 
 }
 
@@ -38,7 +55,7 @@ double Master::solve(){
     BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
     BPP.setOut(env.getNullStream());
 
-    //BPP.exportModel("model.lp");
+    BPP.exportModel("model.lp");
 
     double after;
     double before;
@@ -53,18 +70,15 @@ double Master::solve(){
 
     //printResults(BPP, "instancia", before-after);
     getSolution(BPP);
-    (*this->duals).clear();
-    BPP.getDuals((*this->duals), this->cstr);
+    this->duals.clear();
+    BPP.getDuals(this->duals, this->cstr);
 
-    for(int i = 0; i < this->initial_size; i++){
-        //cout << (*this->duals)[i] << " ";
-    }
-    //cout << endl;
-
-    return BPP.getObjValue();
+    double obj = BPP.getObjValue();
+    BPP.end();
+    return obj;
 }
 
-void Master::addColumn(vector<int> col_vec){
+void Master::addColumn(vector<bool> col_vec){
     IloNumColumn col = this->objF(1);
     
     for(int i = 0; i < initial_size; i++){
@@ -85,9 +99,15 @@ void Master::addColumn(vector<int> col_vec){
     var_new.setName(var_name);
 
     this->model.add(var_new);
+
+    this->var_vec.push_back(var_new);
+    this->A.push_back(col_vec);
+    this->var_standby_flag.push_back(0);
+
+    col.end();
 }
 
-void Master::getSolution(IloCplex cplex){
+void Master::getSolution(IloCplex & cplex){
     IloExpr vars = objF.getExpr();
 
     this->solution.clear();
@@ -102,18 +122,20 @@ void Master::getSolution(IloCplex cplex){
     }
     //cout << endl;
     //exit(1);
+    //
+    vars.end();
 
 }
 
-IloNumArray * Master::getDuals(){
+IloNumArray Master::getDuals(){
     return duals;
 }
 
-vector<int> Master::getColumn(IloNumVar & var){
-    vector<int> column;
+vector<bool> Master::getColumn(IloNumVar & var){
+    vector<bool> column;
 
     for(int i = 0; i < initial_size; i++){
-        int coef = 0;
+        bool coef = 0;
         for (IloExpr::LinearIterator it = IloExpr(this->cstr[i].getExpr()).getLinearIterator(); it.ok();++it)
             if(it.getVar().getName() == var.getName()){
                 coef = 1;
@@ -134,16 +156,92 @@ vector<IloNumVar> Master::getSolution(){
     return solution;
 }
 
+void Master::enforce(pair<int, int> m_pair){
+    int a = m_pair.first; 
+    int b = m_pair.second; 
+
+    cout << "A size " << A.size() << endl;
+
+    for(int j = initial_size; j < A.size(); j++){
+        if(this->var_standby_flag[j] == 0 && (A[j][a] == 0 && A[j][b] == 0)){
+            //removeVar(var_vec[j]);
+            cout << "aqui 1" << endl;
+            //this->model.remove(var_vec[j]);
+            this->var_standby_flag[j] = 1;
+            cout << var_vec[j] << endl;    
+            var_vec[j].end();
+            var_standby.push_back(make_pair(m_pair, j));
+        }
+    }
+}
+
+/*
+void Master::removeVar(IloNumVar var){
+    this->model.remove(var);
+    var_standbydk
+}
+*/
+
+void Master::exclude(pair<int, int> m_pair){
+    int a = m_pair.first; 
+    int b = m_pair.second; 
+
+    cout << "A size " << A.size() << endl;
+    for(int j = initial_size; j < A.size(); j++){
+        if(this->var_standby_flag[j] == 0 && A[j][a] == 1 && A[j][b] == 1){
+            //removeVar(var_vec[j]);
+            cout << "aqui 1" << endl;
+            //this->model.remove(var_vec[j]);
+            this->var_standby_flag[j] = 1;
+            cout << var_vec[j] << endl;    
+            var_vec[j].end();
+            cout << "aqui 2" << endl;
+            var_standby.push_back(make_pair(m_pair, j));
+        }
+    }
+    
+}
+
+inline bool operator==(const pair<int, int> & A, const pair<int, int> & B){ 
+    return (A.first == B.first) && (A.second == B.second);
+}
+
+void Master::reinsert(pair<int, int> m_pair){
+
+    for(int i = 0; i < var_standby.size(); i++){
+        if(m_pair == var_standby[i].first){
+            int var_index = var_standby[i].second;
+            IloNumColumn col = this->objF(1);
+
+            for(int j = 0; j < initial_size; j++){
+                col += this->cstr[i](this->A[var_index][i]);
+            }
+
+            char var_name[100];
+            sprintf(var_name, "b_%u", var_index);
+
+            IloNumVar var_new (col, 0, IloInfinity);
+            var_new.setName(var_name);
+            cout << var_name << endl;
+
+            this->model.add(var_new);
+
+            var_vec[var_index] = var_new;
+            var_standby_flag[var_index] = 0;
+        }
+    }
+}
+
 void Master::printResult(){
     vector<vector<int>> bins;
     for(auto & var: solution){
-        vector<int> column;// = getColumn(var, cstr, initial_size);
+        vector<bool> column;// = getColumn(var, cstr, initial_size);
         //if(
         column = getColumn(var);
 
         vector<int> bin;
         for(int i = 0; i < column.size(); i++){
-            if(column[i] >= 1 - 0.3){
+            if(column[i] == 1){
                 bin.push_back(i+1); 
                 //cout << i+1 << " ";
             }

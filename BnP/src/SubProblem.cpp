@@ -2,7 +2,7 @@
 
 SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude, vector<pair<int, int>> enforce): env(), model(env), LHS(env), x(env, n), column(n){
 
-    //this->weights = w;
+    this->weights = w;
     weights = (int*)calloc(n, sizeof(int));
     memcpy(weights, w, n*sizeof(int));
     this->dimension = n;
@@ -42,7 +42,19 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
     for(int i = 0; i < this->dimension; i++){
         LHS += this->weights[i] * x[i];
     }
-    cstr = (LHS <= this->C);
+
+    /*
+    int sum = 0;
+    for(int i = 0; i < cstr_enforce.size(); i++){
+        int a = cstr_enforce[i].first;
+        int b = cstr_enforce[i].second;
+        sum += this->weights[a] + this->weights[b];
+        cout << "A " << a << " e B " << b << endl;
+    }
+    */
+
+    //cstr = (LHS <= (this->C - sum));
+    cstr = (LHS <= (this->C ));
     model.add(cstr);
     
     // branching cstrs
@@ -53,12 +65,12 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
         IloRange cstr_branch_b;
         int item_a = cstr_exclude[i].first;
         int item_b = cstr_exclude[i].second;
-        exp_a += x[item_a];
-        exp_b += x[item_b];
-        cstr_branch_a = (exp_a == 0);
-        cstr_branch_b = (exp_b == 0);
+        exp_a += x[item_a] + x[item_b];
+        //exp_b += x[item_b];
+        cstr_branch_a = (exp_a <= 1);
+        //cstr_branch_b = (exp_b == 0);
         model.add(cstr_branch_a);
-        model.add(cstr_branch_b);
+        //model.add(cstr_branch_b);
         exp_a.clear();
         exp_b.clear();
     }
@@ -68,12 +80,12 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
         IloRange cstr_branch_b;
         int item_a = cstr_enforce[i].first;
         int item_b = cstr_enforce[i].second;
-        exp_a += x[item_a];
-        exp_b += x[item_b];
-        cstr_branch_a = (exp_a == 1);
-        cstr_branch_b = (exp_b == 1);
+        exp_a += x[item_a] + x[item_b];
+        //exp_b += x[item_b];
+        cstr_branch_a = (exp_a == 2);
+        //cstr_branch_b = (exp_b == 1);
         model.add(cstr_branch_a);
-        model.add(cstr_branch_b);
+        //model.add(cstr_branch_b);
         exp_a.clear();
         exp_b.clear();
     }
@@ -87,7 +99,7 @@ SubProblem::~SubProblem(){
 }
 
 //vector<int> SubProblem::solve(vector<int> duals) {
-double SubProblem::solve(IloNumArray * duals){
+double SubProblem::solve(IloNumArray duals){
 
 
     // add OF
@@ -95,7 +107,7 @@ double SubProblem::solve(IloNumArray * duals){
 
     for(int i = 0; i < this->dimension; ++i){
         //obj += duals[i] * x[i];
-        obj += (*duals)[i] * x[i];
+        obj += duals[i] * x[i];
         //cout << (*duals)[i] << " ";
     }
     //cout << endl;
@@ -142,6 +154,6 @@ double SubProblem::solve(IloNumArray * duals){
     return obj_value;
 }
 
-vector<int> SubProblem::getColumn(){
+vector<bool> SubProblem::getColumn(){
     return column;
 }
