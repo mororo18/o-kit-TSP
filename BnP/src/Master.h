@@ -30,6 +30,7 @@ class Master {
         IloModel            model;
         IloObjective        objF;
         IloRangeArray       cstr;
+        IloCplex            BPP;
         vector<IloNumVar>   var_vec;
         vector<IloNumVar>   solution;
         vector<vector<bool>> A;

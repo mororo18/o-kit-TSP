@@ -1,13 +1,22 @@
 #include "Master.h"
 
-Master::Master(int size) : env(), model(env), duals(env), objF(), cstr(){
+Master::Master(int size) : env(), model(env), BPP(model), duals(env), objF(), cstr(){
     this->initial_size = size;
     this->col_qnt = size;
 
     this->env.setName("Column Generation");
     this->model.setName("Bin Packing Problem");
+
+    this->var_standby.reserve(size);
+
     
     build();
+
+    BPP.setParam(IloCplex::Param::TimeLimit, 1*60*60);
+    BPP.setParam(IloCplex::Param::Threads, 1);
+    BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
+    BPP.setOut(env.getNullStream());
+
 }
 
 Master::~Master(){
@@ -49,12 +58,14 @@ void Master::build(){
 
 double Master::solve(){
 
-    IloCplex BPP(this->model);
+    /*
+    //IloCplex BPP(this->model);
     BPP.setParam(IloCplex::Param::TimeLimit, 1*60*60);
     BPP.setParam(IloCplex::Param::Threads, 1);
     BPP.setParam(IloCplex::Param::MIP::Tolerances::MIPGap, 1e-08);
     BPP.setOut(env.getNullStream());
 
+    */
     //BPP.exportModel("model.lp");
 
     double after;
@@ -80,8 +91,7 @@ double Master::solve(){
     else
         feasibility = true;
 
-    //cout << BPP.getAlgorithm() << endl;
-    BPP.end();
+    //BPP.end();
 
     return obj;
 }
@@ -173,12 +183,10 @@ void Master::enforce(pair<int, int> m_pair){
 
     for(int j = initial_size; j < A.size(); j++){
         if(this->var_standby_flag[j] == 0 && ((A[j][a] == 1 && A[j][b] == 0) || (A[j][a] == 0 && A[j][b] == 1))){
-            //removeVar(var_vec[j]);
             //cout << "aqui 1" << endl;
-            //this->model.remove(var_vec[j]);
             this->var_standby_flag[j] = 1;
-            //cout << var_vec[j] << endl;    
-            var_vec[j].end();
+            var_vec[j].setUB(0);
+            //var_vec[j].end();
             var_standby.push_back(make_pair(m_pair, j));
         }
     }
@@ -207,7 +215,8 @@ void Master::exclude(pair<int, int> m_pair){
             this->var_standby_flag[j] = 1;
             //cout << var_vec[j] << endl;    
             try{
-            var_vec[j].end();
+            var_vec[j].setUB(0);
+            //var_vec[j].end();
             }catch(IloException & e){
                 cerr << e;
             }
@@ -235,6 +244,11 @@ void Master::reinsert(pair<int, int> m_pair){
             //cout << "Vstandby fisrt  " << var_standby[i].first.first << endl;
             
             int var_index = var_standby[i].second;
+
+            var_vec[var_index].setUB(IloInfinity);
+
+
+            /*
             //cout << "Var index " << var_index << endl;
             IloNumColumn col = this->objF(1);
 
@@ -259,16 +273,20 @@ void Master::reinsert(pair<int, int> m_pair){
             this->model.add(var_new);
             //cout << "opaaa 4" << endl;
 
+
             //cout << "ape" << endl;
             var_vec[var_index] = var_new;
-            var_standby_flag[var_index] = 0;
 
             var_standby.erase(var_standby.begin() + i);
             if(i < var_standby.size() - 1)
                 i--;
             //cout << "dep" << endl;
+
+            */
+            var_standby_flag[var_index] = 0;
         }
     }
+    //var_standby.resize(var_standby.size());
     //cout <<"reinsertion pos"<< endl;
 }
 

@@ -2,12 +2,20 @@
 #include "Data.h"
 #include "Master.h"
 #include "SubProblem.h"
+#include "measure.h"
 #include <cfloat>
 #include <ilcplex/ilocplex.h>
 
 #define DEPTH   0
 #define BREADTH 1
 #define BEST_BD 2
+
+MEASURE_BLOCK enforce;
+MEASURE_BLOCK exclude;
+MEASURE_BLOCK GC;
+MEASURE_BLOCK masterP;
+MEASURE_BLOCK subP;
+MEASURE_BLOCK add_col;
 
 double upper_bd = DBL_MAX; 
 int colunas = 0;
@@ -53,14 +61,14 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
 
     cout << "ANTES" << endl;
     while(true){
+        measure_before(masterP);
         obj_value = BPP.solve();
+        measure_after(masterP);
         //cout << "crnt obj " << obj_value << endl;
+        measure_before(subP);
         pricing = KP.solve(BPP.getDuals());
+        measure_after(subP);
         //cout << "crnt prcing " << pricing << endl;
-        IloNumArray dual = BPP.getDuals();
-        for(int i = 0; i < data.getItemQnt(); i++){
-            //cout << dual[i] << " ";
-        }
         //cout << endl;
 
         if(pricing >= -0.000001)
@@ -68,8 +76,10 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
 
         colunas++;
 
+        measure_before(add_col);
         vector<bool> column = KP.getColumn();
         BPP.addColumn(column);
+        measure_after(add_col);
 
     }
     cout << "DEPOIS" << endl;
@@ -89,6 +99,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
         cout << node.exclude[i].first << "-" << node.exclude[i].second << " ";
     }
     cout << endl;
+
 
     cout << "Enforce ";
     for(int i = 0; i < node.enforce.size(); i++){
@@ -154,7 +165,9 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
 }
 
 void search_depth(struct node_info & node, Master & M, Data & data){
+    measure_before(GC);
     column_generation(node, M, data);
+    measure_after(GC);
 
     if(node.value - DBL_EPSILON <= upper_bd - 1 ){
         if(node.feasibility == true){
@@ -170,14 +183,6 @@ void search_depth(struct node_info & node, Master & M, Data & data){
             node.lambda_solution.clear(); 
             //cout << "paee" << endl;
 
-            // exclude 
-            struct node_info node_son_A;
-            node_son_A.exclude = node.exclude;
-            node_son_A.enforce = node.enforce;
-
-
-            //cout << "paee2" << endl;
-            node_son_A.exclude.push_back(m_frac);
 
             cout << endl << " BRANCH Exclude "<<endl;
             // enforce
@@ -188,16 +193,39 @@ void search_depth(struct node_info & node, Master & M, Data & data){
 
             node_son_B.enforce.push_back(m_frac);
 
+            node.exclude.clear();
+
+            measure_before(enforce);
             M.enforce(m_frac);
+            measure_after(enforce);
+
             search_depth(node_son_B, M, data);
             M.reinsert(m_frac);
 
 
+
+            // se a diferenca entre o valor do pai e o upper bound ainda continua maior q 1
+            if(node.value - DBL_EPSILON <= upper_bd - 1.0f){
+                
+            // exclude 
+            struct node_info node_son_A;
+            node_son_A.exclude = node_son_B.exclude;
+            node_son_A.enforce = node.enforce;
+
+            node.enforce.clear();
+
+            //cout << "paee2" << endl;
+            node_son_A.exclude.push_back(m_frac);
+
+            measure_before(exclude);
             M.exclude(m_frac);
+            measure_after(exclude);
+
             search_depth(node_son_A, M, data);
             M.reinsert(m_frac);
 
-            cout << endl << " BRANCH Enforce "<<endl;
+                cout << endl << " BRANCH Enforce "<<endl;
+            }
         }
     }
 }
@@ -220,14 +248,29 @@ int main(int argc, char * argv[]){
 
     data.loadData();
 
-    clock_t begin = clock();
+    measure_block_init(&enforce);
+    measure_block_init(&exclude);
+    measure_block_init(&GC);
+    measure_block_init(&masterP);
+    measure_block_init(&subP);
+    measure_block_init(&add_col);
+
+
+    double before = now();
     Master  BPP (data.getItemQnt());
     branch_and_price(BPP, data, DEPTH);
-    clock_t end = clock();
+    double after = now();
+
+    cout << "Enforce " << measure_total(enforce) << endl;
+    cout << "Exclude " << measure_total(exclude) << endl;
+    cout << "Geracao de Col " << measure_total(GC) << endl;
+    cout << "Mestre " << measure_total(masterP) << endl;
+    cout << "SubProb " << measure_total(subP) << endl;
+    cout << "Add Col " << measure_total(add_col) << endl;
 
     cout << "Solution  " << node_best.value << endl;
 
-    cout << "Time: " << (double)(end-begin)/CLOCKS_PER_SEC << endl;;
+    cout << "Time: " << (after- before) << endl;;
 
     vector<vector<int>> bins;
     for(int i = 0; i < node_best.columns.size(); i++){
