@@ -51,7 +51,7 @@ void solution_load(struct node_info & node, Master & M){
 }
 
 void column_generation(struct node_info & node, Master & BPP, Data & data){
-    vector<pair<int, int>> test = {make_pair(18, 39)};
+    //vector<pair<int, int>> test = {make_pair(18, 39)};
 
     //SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, test);
     SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
@@ -164,10 +164,13 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
     return make_pair(item_a, item_b);
 }
 
-void search_depth(struct node_info & node, Master & M, Data & data){
+void search_depth(struct node_info & node, Master & M, Data & data, int gen){
     measure_before(GC);
     column_generation(node, M, data);
     measure_after(GC);
+
+    //if(gen == 1)
+        //exit(1);
 
     if(node.value - DBL_EPSILON <= upper_bd - 1 ){
         if(node.feasibility == true){
@@ -179,6 +182,9 @@ void search_depth(struct node_info & node, Master & M, Data & data){
             // branching rule
             //cout << "pee" << endl;
             pair<int, int> m_frac = get_most_fractional_pair(node.lambda_solution, node.columns);
+            for(int i = 0; i < node.columns.size(); i++){
+                node.columns[i].clear(); 
+            }
             node.columns.clear(); 
             node.lambda_solution.clear(); 
             //cout << "paee" << endl;
@@ -193,13 +199,14 @@ void search_depth(struct node_info & node, Master & M, Data & data){
 
             node_son_B.enforce.push_back(m_frac);
 
+
             node.exclude.clear();
 
             measure_before(enforce);
             M.enforce(m_frac);
             measure_after(enforce);
 
-            search_depth(node_son_B, M, data);
+            search_depth(node_son_B, M, data, gen+1);
             M.reinsert(m_frac);
 
 
@@ -221,7 +228,7 @@ void search_depth(struct node_info & node, Master & M, Data & data){
             M.exclude(m_frac);
             measure_after(exclude);
 
-            search_depth(node_son_A, M, data);
+            search_depth(node_son_A, M, data, gen+1);
             M.reinsert(m_frac);
 
                 cout << endl << " BRANCH Enforce "<<endl;
@@ -230,11 +237,11 @@ void search_depth(struct node_info & node, Master & M, Data & data){
     }
 }
 
-void branch_and_price(Master & M, Data & data, int opt){
+void branch_and_price(Master & M, Data & data, int opt, int gen){
     struct node_info node_root;
     switch (opt){
         case DEPTH:
-            search_depth(node_root, M, data);
+            search_depth(node_root, M, data, gen);
             break;
         case BREADTH:
             break;
@@ -258,7 +265,7 @@ int main(int argc, char * argv[]){
 
     double before = now();
     Master  BPP (data.getItemQnt());
-    branch_and_price(BPP, data, DEPTH);
+    branch_and_price(BPP, data, DEPTH, 0);
     double after = now();
 
     cout << "Enforce " << measure_total(enforce) << endl;

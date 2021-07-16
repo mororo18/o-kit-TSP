@@ -58,8 +58,8 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
     model.add(cstr);
     
     // branching cstrs
-        IloExpr exp_a (env);
-        IloExpr exp_b (env);
+    IloExpr exp_a (env);
+    IloExpr exp_b (env);
     for(int i = 0; i < cstr_exclude.size(); i++){
         IloRange cstr_branch_a;
         int item_a = cstr_exclude[i].first;
@@ -92,6 +92,9 @@ SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude,
 
 SubProblem::~SubProblem(){
     free(weights);
+    this->model.end();
+    this->LHS.end();
+    this->x.end();
     this->env.end();
     cstr_enforce.clear();
     cstr_exclude.clear();
@@ -134,12 +137,7 @@ double SubProblem::solve(IloNumArray duals){
     //cout << "opa" << endl;
     for(int i = 0; i < this->dimension; i++){
         double value = 0;
-        try{ 
-            value = KP.getValue(x[i]);
-        }
-        catch(const IloException& e){
-            cerr << e;
-        }
+        value = KP.getValue(x[i]);
 
         if(value >= 0.9)
             column[i] = 1;

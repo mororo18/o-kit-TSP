@@ -11,7 +11,7 @@ using namespace std;
 class Master {
     public:
         Master(int);
-        ~Master();
+        virtual ~Master();
         void addColumn(vector<bool>);
         //vector<int> getDuals();
         IloNumArray getDuals();

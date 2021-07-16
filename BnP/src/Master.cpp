@@ -154,12 +154,14 @@ vector<bool> Master::getColumn(IloNumVar & var){
 
     for(int i = 0; i < initial_size; i++){
         bool coef = 0;
-        for (IloExpr::LinearIterator it = IloExpr(this->cstr[i].getExpr()).getLinearIterator(); it.ok();++it)
+        IloExpr e = IloExpr(this->cstr[i].getExpr());
+        for (IloExpr::LinearIterator it = e.getLinearIterator(); it.ok();++it)
             if(it.getVar().getName() == var.getName()){
                 coef = 1;
                 break;
             }
 
+        e.end();
         column.push_back(coef);
     }
 
@@ -191,7 +193,7 @@ void Master::enforce(pair<int, int> m_pair){
         }
     }
 
-    cout << "enforce end"<< endl;
+    cout << "enforce SIZE "<< var_standby.size() << endl;
 }
 
 /*

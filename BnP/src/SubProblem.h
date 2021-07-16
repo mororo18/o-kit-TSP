@@ -22,9 +22,9 @@ class SubProblem {
         int     C;
 
         IloEnv          env;
-        IloModel model;
-        IloExpr LHS;
-        IloBoolVarArray x ;
+        IloModel        model;
+        IloExpr         LHS;
+        IloBoolVarArray x;
 
         vector<bool> column;
 
