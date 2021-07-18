@@ -16,6 +16,7 @@ MEASURE_BLOCK GC;
 MEASURE_BLOCK masterP;
 MEASURE_BLOCK subP;
 MEASURE_BLOCK add_col;
+MEASURE_BLOCK s_load;
 
 double upper_bd = DBL_MAX; 
 int colunas = 0;
@@ -54,7 +55,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
     //vector<pair<int, int>> test = {make_pair(18, 39)};
 
     //SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, test);
-    SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
+    SubProblem  KP (BY_MIP, data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
 
     double obj_value;
     double pricing;
@@ -108,7 +109,9 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
     cout << endl;
 
     node.value = obj_value;
+    measure_before(s_load);
     solution_load(node, BPP);
+    measure_after(s_load);
     cout << "auq" << endl;
 }
 
@@ -131,16 +134,6 @@ pair<int, int> get_most_fractional_pair(vector<double> var_value, vector<vector<
                     pair_value[index[i]][index[j]] += var_value[k];
                 }
             }
-
-            /*
-            for(int i = 0; i < n-1; i++){
-                if(column[k][i] == 1)
-                    for(int j = i+1; j < n; j++){
-                        if(columns[k][j] == 1)
-                            pair_value[i][j] += var_value[k];
-                    }
-            }
-            */
         }
     }
 
@@ -261,6 +254,7 @@ int main(int argc, char * argv[]){
     measure_block_init(&masterP);
     measure_block_init(&subP);
     measure_block_init(&add_col);
+    measure_block_init(&s_load);
 
 
     double before = now();
@@ -273,6 +267,7 @@ int main(int argc, char * argv[]){
     cout << "Geracao de Col " << measure_total(GC) << endl;
     cout << "Mestre " << measure_total(masterP) << endl;
     cout << "SubProb " << measure_total(subP) << endl;
+    cout << "Solution Load " << measure_total(s_load) << endl;
     cout << "Add Col " << measure_total(add_col) << endl;
 
     cout << "Solution  " << node_best.value << endl;

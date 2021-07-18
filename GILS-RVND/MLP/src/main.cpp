@@ -149,6 +149,7 @@ void construct(std::vector<int> &s, const double alpha){
             insertion_cost[i].node_new = candidates[i];
         }
 
+        //int node_rand_range = 0 * insertion_cost.size() + 1;
         int node_rand_range = alpha * insertion_cost.size() + 1;
         int node_rand_index = (unsigned)rand() % node_rand_range;
         std::partial_sort(insertion_cost.begin(), insertion_cost.begin() + node_rand_range, insertion_cost.end(), cost_compare);
@@ -159,6 +160,12 @@ void construct(std::vector<int> &s, const double alpha){
 
         binary_search(candidates, node_rand, 0, candidates.size() );
     }
+
+    for(int i = 0; i < dimension; i++){
+        std::cout << s[i] -1 << " ";
+    }
+    std::cout << std::endl;
+//exit(1);
 }	
 
 inline void swap_2(std::vector<int> &vec, int i, int j){
@@ -199,7 +206,6 @@ inline void subseq_info_load(std::vector<std::vector<struct subseq>> &seq, std::
         seq[i][i].T = 0;
         seq[i][i].C = 0;
         seq[i][i].W = !(i == 0);
-        std::vector<int> p = {1, 8, 9, 11, 5, 4, 12, 13, 7, 6, 3, 14, 2, 10, 1};
         for(j = i+1; j < dim; j++){
             a = j-1;
             seq[i][j].T = c[s[a]][s[j]] + seq[i][a].T ;
@@ -422,8 +428,10 @@ void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
     alignas(alignof(std::vector<int>)) std::vector<int> neighbd_list = {1,2,3,4,5};
     alignas(INT_SZ) int neighbd_rand_index;
     alignas(INT_SZ) int neighbd_rand;
+    int k = 0;
 
     while(!neighbd_list.empty()){
+        k++;
 
         neighbd_rand_index = (unsigned)rand() % neighbd_list.size();
         neighbd_rand = neighbd_list[neighbd_rand_index];
@@ -465,6 +473,8 @@ void RVND(std::vector<int> &s, std::vector<std::vector<struct subseq>> &seq){
         
 
     }
+
+    //std::cout << k << " RVND iteracoes" << std::endl;
 }
 
 void perturb(std::vector<int> &sl, std::vector<int> &s){
@@ -572,9 +582,12 @@ void GILS_RVND(int Imax, int Iils){
         printf("\t[+] Looking for the best Neighbor..\n");
         subseq_info_load(subseq_info, s);
         cost_rvnd_best = subseq_info[0][dimension].C - DBL_EPSILON;
+        printf("\t    Construction Cost: %.3lf\n", cost_rvnd_best);	
 
         int Iterils = 0;
+        int k = 0;
         while(Iterils < Iils){
+            k++;
             RVND(s, subseq_info);
             cost_rvnd_current = subseq_info[0][dimension].C - DBL_EPSILON;
             if(cost_rvnd_current < cost_rvnd_best){
@@ -598,15 +611,19 @@ void GILS_RVND(int Imax, int Iils){
 
         after(7);
 
+        //std::cout << "\tCurrent search cost: "<< cost_sl << std::endl;
         std::cout << "\tCurrent best cost: "<< cost_final << std::endl;
         std::cout << "\tCurrent search time: "<< search_t / 10e5<< std::endl;
         std::cout << "\tCurrent search time average: "<< (search_t_average / (i+1)) / 10e5 << std::endl;
+        //std::cout << k << "  Iteracoes " << std::endl;
 
+        /*
         std::cout << "SOLUCAO: ";
         for(int i = 0; i < s.size(); i++){
             std::cout << s_final[i] -1 << " ";
         }
         std::cout << std::endl;
+        */
 
     }
     std::cout << "Dimension: " << dimension << std::endl;

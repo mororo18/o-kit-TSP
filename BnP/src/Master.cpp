@@ -150,22 +150,11 @@ IloNumArray Master::getDuals(){
 }
 
 vector<bool> Master::getColumn(IloNumVar & var){
-    vector<bool> column;
+    string var_name = var.getName();
+    size_t pos = var_name.find('_') + 1; 
+    int i = stoi(var_name.substr(pos));
 
-    for(int i = 0; i < initial_size; i++){
-        bool coef = 0;
-        IloExpr e = IloExpr(this->cstr[i].getExpr());
-        for (IloExpr::LinearIterator it = e.getLinearIterator(); it.ok();++it)
-            if(it.getVar().getName() == var.getName()){
-                coef = 1;
-                break;
-            }
-
-        e.end();
-        column.push_back(coef);
-    }
-
-    return column;
+    return this->A[i];
 }
 
 vector<double> Master::getSolutionValues(){

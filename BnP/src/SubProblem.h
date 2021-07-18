@@ -1,6 +1,9 @@
 #ifndef SUBPROBLEM_H
 #define SUBPROBLEM_H
 
+#define BY_MIP 0
+#define PISINGER 1
+
 #include <ilcplex/ilocplex.h>
 #include <vector>
 #include <iostream>
@@ -11,7 +14,7 @@ using namespace std;
 
 class SubProblem {
     public:
-        SubProblem(int*, int, int, vector<pair<int, int>>, vector<pair<int, int>>);
+        SubProblem(int, int*, int, int, vector<pair<int, int>>, vector<pair<int, int>>);
         ~SubProblem();
         //vector<int> solve(vector<int>);
         double solve(IloNumArray);
@@ -20,6 +23,7 @@ class SubProblem {
         int *   weights;
         int     dimension;
         int     C;
+        int     mode;
 
         IloEnv          env;
         IloModel        model;
@@ -27,9 +31,12 @@ class SubProblem {
         IloBoolVarArray x;
 
         vector<bool> column;
-
         vector<pair<int, int>> cstr_enforce;
         vector<pair<int, int>> cstr_exclude;
+
+        void MIP_build();
+        double MIP_solve(IloNumArray);
+        double PISINGER_solve(IloNumArray);
 };
 
 #endif
