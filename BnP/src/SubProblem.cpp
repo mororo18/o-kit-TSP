@@ -1,7 +1,7 @@
 #include "SubProblem.h"
 #include "minknap.c"
 
-SubProblem::SubProblem(int opt, int * w, int binC, int n, vector<pair<int, int>> exclude, vector<pair<int, int>> enforce): env(), model(env), LHS(env), x(env, n), column(n){
+SubProblem::SubProblem(int * w, int binC, int n, vector<pair<int, int>> exclude, vector<pair<int, int>> enforce): env(), model(env), LHS(env), x(env, n), column(n){
 
     //this->weights = w;
     weights = (int*)calloc(n, sizeof(int));
@@ -11,10 +11,15 @@ SubProblem::SubProblem(int opt, int * w, int binC, int n, vector<pair<int, int>>
 
     this->cstr_exclude = exclude;
     this->cstr_enforce = enforce;
-    this->mode = opt;
-
-    if(opt == BY_MIP)
+    if(exclude.empty() && enforce.empty()){
+        this->mode = PISINGER;
+        //this->mode = BY_MIP;
+        //MIP_build();
+    }else{
+        this->mode = BY_MIP;
         MIP_build();
+    }
+
 }
 
 SubProblem::~SubProblem(){
@@ -27,29 +32,33 @@ SubProblem::~SubProblem(){
         this->LHS.end();
         this->x.end();
         this->env.end();
-    }else(this->mode == PISINGER);
+    }
 }
 
 double SubProblem::solve(IloNumArray duals){
-    if(this->mode == BY_MIP)
+    if(this->mode == BY_MIP){
         return 1.0 - MIP_solve(duals);
-    else if(this->mode == PISINGER)
+    }else if(this->mode == PISINGER){
         return 1.0 - PISINGER_solve(duals);
+    }
 }
 
 double SubProblem::PISINGER_solve(IloNumArray duals){
     int p[this->dimension] = {};
     int x[this->dimension];
 
-    for(int i = 0; i < this->dimension; i++)
-        p[i] = duals[i];
+    for(int i = 0; i < this->dimension; i++){
+        p[i] = duals[i] * BIG_FAC;
+    }
 
     double obj_value = minknap(this->dimension, p, this->weights, x, this->C);
-    for(int i = 0; i < this->dimension; i++)
+    for(int i = 0; i < this->dimension; i++){
         column[i] = (bool)x[i];
+    }
+
+    obj_value *= BIG_FAC_inv;
 
     return obj_value;
-
 }
 
 void SubProblem::MIP_build(){
@@ -78,11 +87,8 @@ void SubProblem::MIP_build(){
         int item_a = cstr_exclude[i].first;
         int item_b = cstr_exclude[i].second;
         exp_a += x[item_a] + x[item_b];
-        //exp_b += x[item_b];
         cstr_branch_a = (exp_a <= 1);
-        //cstr_branch_b = (exp_b == 0);
         model.add(cstr_branch_a);
-        //model.add(cstr_branch_b);
         exp_a.clear();
     }
 
@@ -91,10 +97,7 @@ void SubProblem::MIP_build(){
         int item_a = cstr_enforce[i].first;
         int item_b = cstr_enforce[i].second;
         exp_a += x[item_a] - x[item_b];
-        //exp_b += x[item_b];
         cstr_branch_a = (exp_a == 0);
-        //cstr_branch_a = (x[item_a] <= x[item_b]);
-        //cstr_branch_b = (exp_b == 1);
         model.add(cstr_branch_a);
         exp_a.clear();
     }
@@ -129,12 +132,10 @@ double SubProblem::MIP_solve(IloNumArray duals){
     }
 
     double value;
+    bool arr_branch[] = {0, 1};
     for(int i = 0; i < this->dimension; i++){
         value = KP.getValue(x[i]);
-        if(value >= 0.9)
-            column[i] = 1;
-        else
-            column[i] = 0;
+        column[i] = arr_branch[value >= 0.9];
     }
 
     double obj_value = KP.getObjValue();

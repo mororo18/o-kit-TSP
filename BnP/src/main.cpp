@@ -22,7 +22,6 @@ double upper_bd = DBL_MAX;
 int colunas = 0;
 
 struct node_info {
-    //vector<vector<int>> solution;
     vector<double> lambda_solution;
     vector<vector<bool>> columns;
     vector<pair<int, int>> exclude;
@@ -55,7 +54,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
     //vector<pair<int, int>> test = {make_pair(18, 39)};
 
     //SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, test);
-    SubProblem  KP (BY_MIP, data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
+    SubProblem  KP (data.getWeights(), data.getBinCapacity(), data.getItemQnt(), node.exclude, node.enforce);
 
     double obj_value;
     double pricing;
@@ -93,7 +92,7 @@ void column_generation(struct node_info & node, Master & BPP, Data & data){
 
     //exit(1);
     //if(node.exclude.empty() && !node.enforce.empty())
-        //exit(1);
+    //exit(1);
 
     cout << "Exclude ";
     for(int i = 0; i < node.exclude.size(); i++){
@@ -262,19 +261,21 @@ int main(int argc, char * argv[]){
     branch_and_price(BPP, data, DEPTH, 0);
     double after = now();
 
-    cout << "Enforce " << measure_total(enforce) << endl;
-    cout << "Exclude " << measure_total(exclude) << endl;
-    cout << "Geracao de Col " << measure_total(GC) << endl;
-    cout << "Mestre " << measure_total(masterP) << endl;
-    cout << "SubProb " << measure_total(subP) << endl;
-    cout << "Solution Load " << measure_total(s_load) << endl;
-    cout << "Add Col " << measure_total(add_col) << endl;
+    cout << "Enforce\t" << measure_total(enforce) << endl;
+    cout << "Exclude\t" << measure_total(exclude) << endl;
+    cout << "Geracao de Col\t" << measure_total(GC) << endl;
+    cout << "Mestre\t" << measure_total(masterP) << endl;
+    cout << "SubProb\t" << measure_total(subP) << endl;
+    cout << "Solution Load\t" << measure_total(s_load) << endl;
+    cout << "Add Col\t" << measure_total(add_col) << endl;
 
     cout << "Solution  " << node_best.value << endl;
 
     cout << "Time: " << (after- before) << endl;;
+    
 
-    vector<vector<int>> bins;
+    /*
+    vector<vector<int>> bins = BPP.getBins();
     for(int i = 0; i < node_best.columns.size(); i++){
         vector<int> bin;
         for(int j = 0; j < node_best.columns[i].size(); j++){
@@ -286,6 +287,7 @@ int main(int argc, char * argv[]){
         cout << endl;
         bins.push_back(bin);
     }
+    */
 
     return 0;
 

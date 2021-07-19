@@ -3,6 +3,8 @@
 
 #define BY_MIP 0
 #define PISINGER 1
+#define BIG_FAC 1e6
+#define BIG_FAC_inv 1e-6
 
 #include <ilcplex/ilocplex.h>
 #include <vector>
@@ -14,7 +16,7 @@ using namespace std;
 
 class SubProblem {
     public:
-        SubProblem(int, int*, int, int, vector<pair<int, int>>, vector<pair<int, int>>);
+        SubProblem(int*, int, int, vector<pair<int, int>>, vector<pair<int, int>>);
         ~SubProblem();
         //vector<int> solve(vector<int>);
         double solve(IloNumArray);

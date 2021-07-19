@@ -16,7 +16,7 @@ class Master {
         //vector<int> getDuals();
         IloNumArray getDuals();
         double solve();
-        void printResult();
+        vector<vector<int>> getBins();
         vector<bool> getColumn(IloNumVar &);
         vector<IloNumVar> getSolution();
         vector<double> getSolutionValues();
@@ -41,7 +41,6 @@ class Master {
         int                 initial_size;
         int                 col_qnt;
         bool                feasibility;
-
 
         void build();
         void getSolution(IloCplex &);
