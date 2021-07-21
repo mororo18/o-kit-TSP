@@ -269,9 +269,9 @@ int main(int argc, char * argv[]){
     cout << "Solution Load\t" << measure_total(s_load) << endl;
     cout << "Add Col\t" << measure_total(add_col) << endl;
 
-    cout << "Solution  " << node_best.value << endl;
 
     cout << "Time: " << (after- before) << endl;;
+    cout << "Solution:  " << node_best.value << endl;
     
 
     /*

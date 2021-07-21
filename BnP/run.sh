@@ -48,13 +48,16 @@ SUMMARY="results/summary-$(date +"%FT%T").txt"
 
 make
 
+fifty=50
+
 k=1
 files=$(ls instances/ | wc -l)
 start=$(date +%s)
 
 for instance in instances/*; do
 
-    instance_sz=${instance//[!0-9]/}
+    instance_sz=$((${instance:11:1} * $fifty))
+    #echo "$instance_sz"
 
     if [[ $instance_sz -gt $larger && $larger -ne 0 ]]
     then
@@ -69,7 +72,7 @@ for instance in instances/*; do
 	echo "Instance $k of $files" 
 
 	for i in $(seq 1 $t); do
-		./bc ${instance} | grep 'UB:\|Total_Time:' | awk "{print $1}" >> ${FILENAME}
+		./bc ${instance} | grep 'Solution:\|Time:' | awk "{print $1}" >> ${FILENAME}
 	done
 
 	k=$(($k + 1))
@@ -77,6 +80,8 @@ for instance in instances/*; do
 		#break
 	#fi
 done
+
+#exit 1
 
 echo "-" >> ${FILENAME}
 

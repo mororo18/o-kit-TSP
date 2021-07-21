@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import pandas as pd
 import sys
 import glob
 import os
@@ -16,6 +17,7 @@ bm_file = max(list_of_files, key=os.path.getmtime)
 
 results_file = "results/results-" + bm_file[len('results/bm')+1:]
 summary_file = "results/summary-" + bm_file[len('results/bm')+1:]
+df = pd.read_excel('solutions.xlsx')
 
 fin = open(bm_file, "r")              # Results from running tsp 10 times for each instance
 fout = open(results_file, "w+")        # Output file
@@ -88,52 +90,24 @@ for line in fin.readlines():
 
         # Gets target value from target.txt for given instance
         # so the error % can be calculated later.
-        for tgt in ftarget.readlines():
 
-            #Treating read line
-            tgt_list = tgt.split(":")
-            tgt_name = tgt_list[0]
+        i = df.index[df['Name'] == instance_name[len("instances/"):-4]+".txt"]
+        try:
+            target = float(df["Best UB"][i])
+        except TypeError:
+            if instance_name == "-":
+                exit(1)
+            else:
+                print("Problem reading the results of", instance_name)
+        #target = int(target)
 
-            tgt_find = 0
+        tgt_find = 1
 
-            if instance_name == tgt_name:
-                tgt_find = 1
-
-                # Continue treating the line (after if to save resources)
-                tgt_value_endl = tgt_list[1]
-                tgt_value_list = tgt_value_endl.split("\n")
-                tgt_value = tgt_value_list[0]
-
-                try:
-                    target = float(tgt_value)
-                except ValueError:
-                    # Case of result as a range
-                    target = tgt_value.split(',')
-
-                    x1 = target[0].split('[')
-                    x1 = x1[1]
-
-                    x2 = target[1].split(']')
-                    x2 = x2[0]
-
-                    target = [float(x1), float(x2)]
+        #ftarget.seek(0,0)
 
 
-                break
-
-        ftarget.seek(0,0)
-
-        if instance_name == "-":
-            exit(1)
-
-        if not tgt_find:
-            message_results = "Couldn't find optimal data for " + instance_name + "\n\n"
-            message_summary = instance_name + " --- Not found\n"
-            fout.write(message_results)
-            fsummary.write(message_summary)
-        else:
-            fout.write(instance_name)
-            fsummary.write(instance_name)
+        fout.write(instance_name)
+        fsummary.write(instance_name)
 
         #Reset total cost and time
         sum_cost = 0
