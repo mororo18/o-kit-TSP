@@ -16,8 +16,10 @@
 #define REINSERTION 1
 #define OR_OPT2 	2
 #define OR_OPT3 	3
-#define SWAP 		4
-#define TWO_OPT		5
+#define OR_OPT4 	4
+#define OR_OPT5 	5
+#define SWAP 		6
+#define TWO_OPT		7
 
 using std::chrono::duration_cast;
 using std::chrono::microseconds;
@@ -58,6 +60,7 @@ long search_t_average = 0;
 
 //-----  to measure the execution time BEGIN  -----
 
+/*
 void before(){
     if(!flag)
         return;
@@ -96,6 +99,7 @@ void after(int a){
     }
 }
 
+*/
 //-----  to measure the execution time END  -----
 
 bool cost_compare(const insertion_info &a, const insertion_info &b){
@@ -353,14 +357,14 @@ inline void cost_calc(std::vector<int> &s, double *cost_best){
 
 inline void neighbd_list_repopulate(std::vector<int> &list){
     list.clear();
-    list = {1, 2, 3, 4, 5};
+    list = { REINSERTION,  OR_OPT2, OR_OPT3,OR_OPT4,OR_OPT5, SWAP, TWO_OPT};
     //printf("REPOPULATE\n");
 }
 
 void RVND(std::vector<int> &s){
 
     //printf("for -> while -> RVND\n");
-    alignas(8) std::vector<int> neighbd_list = {1, 2, 3, 4, 5};
+    alignas(8) std::vector<int> neighbd_list = { REINSERTION,  OR_OPT2, OR_OPT3,OR_OPT4,OR_OPT5, SWAP, TWO_OPT};
     alignas(4) int neighbd_rand_index;
     alignas(4) int neighbd_rand;
 
@@ -383,6 +387,16 @@ void RVND(std::vector<int> &s){
                 //after(OR_OPT2);
                 break;				
             case OR_OPT3:
+                //before();
+                neighbor_reinsertion_better(s, OR_OPT3);
+                //after(OR_OPT3);
+                break;				
+            case OR_OPT4:
+                //before();
+                neighbor_reinsertion_better(s, OR_OPT3);
+                //after(OR_OPT3);
+                break;				
+            case OR_OPT5:
                 //before();
                 neighbor_reinsertion_better(s, OR_OPT3);
                 //after(OR_OPT3);
@@ -477,6 +491,21 @@ void perturb(std::vector<int> &sl, std::vector<int> &s){
     delete sub_seq2;
 }
 
+float similarity(std::vector<int> s, std::vector<int> p) {
+    float sim = 0;
+
+    for (int i = 0; i < dimension; i++) {
+        for (int j = 0; j < dimension; j++) {
+            if (s[i] == p[j+1] && s[i+1] == p[j] || s[i] == p[j] && s[i+1] == p[j+1]) {
+                sim += 1.0;
+                break;
+            }
+        }
+    }
+
+    return sim / dimension;
+}
+
 void GILS_RVND(int Imax, int Iils){
 
     alignas(alignof(std::vector<int>)) std::vector<int> s;
@@ -490,9 +519,12 @@ void GILS_RVND(int Imax, int Iils){
     double cost_sl;
     double cost_final;
 
-    for(int i = 0; i < Imax; ++i){
+    std::vector<std::vector<int>> pool;
+    pool.reserve(50);
 
-        before();
+    for(int i = 0; i < Imax; ++i){
+        bool flag = false;
+        //before();
         int a = 99;
         int aux = (unsigned)rand() % a + 1;
         double alpha = 1.0 / aux;
@@ -511,6 +543,7 @@ void GILS_RVND(int Imax, int Iils){
 
         while(Iterils < Iils){
             RVND(s);
+
             cost_calc(s, &cost_rvnd_current);
             if(cost_rvnd_current < cost_rvnd_best){
                 sl.clear();
@@ -529,13 +562,20 @@ void GILS_RVND(int Imax, int Iils){
             cost_final = cost_sl;
         }
 
-        after(7);
+        pool.push_back(sl);
 
         std::cout << "\tCurrent best cost: "<< cost_final << std::endl;
         std::cout << "\tCurrent search time: "<< search_t / 10e5<< std::endl;
         std::cout << "\tCurrent search time average: "<< (search_t_average / (i+1)) / 10e5 << std::endl;
 
     }
+    /*std::cout << "[";
+    for (int i = 0; i < s_final.size()-1; i++) {
+        std::cout << c[s_final[i]][s_final[i+1]] << ", ";
+    }
+    std::cout << "]";
+    std::cout << std::endl;
+    */
     std::cout << "COST: " << cost_final << std::endl;
 }
 
